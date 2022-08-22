@@ -1,0 +1,12 @@
+{
+  "$schema":"./vendor/phpbench/phpbench/phpbench.schema.json",
+  "runner.bootstrap": "vendor/autoload.php",
+  "runner.progress": "dots",
+  "report.generators": {
+    "tsantos": {
+      "extends": "default",
+      "aggregate": ["benchmark_name", "subject_name"],
+      "cols": { "benchmark":  null, "subject":  null, "its": null, "mode": null, "best":  null, "worst":  null, "mean": null}
+    }
+  }
+}
