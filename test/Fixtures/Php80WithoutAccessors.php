@@ -4,17 +4,21 @@ declare(strict_types=1);
 
 namespace Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures;
 
+use Symfony\Component\Serializer\Annotation\Groups;
+
 class Php80WithoutAccessors
 {
+    #[Groups('foo-group')]
     public string $string;
 
     /** @var string */
     public $stringWithDocBlock;
 
+    #[Groups('foo-group')]
     public int $int;
     public float $float;
     public array $array;
-    public DummyWithConstructor $nested;
+    public ?self $nested = null;
 
     /** @var DummyWithConstructor[] */
     public array $objectCollection;

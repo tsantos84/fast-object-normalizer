@@ -6,6 +6,7 @@ namespace Tsantos\Test\Symfony\Serializer\Normalizer;
 
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
+use Symfony\Component\Serializer\Exception\CircularReferenceException;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
 use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 use Symfony\Component\Serializer\Normalizer\DateTimeZoneNormalizer;
@@ -16,7 +17,7 @@ use Tsantos\Symfony\Serializer\Normalizer\NormalizerGenerator;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithConstructor;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\Php80WithoutAccessors;
 
-class GeneratedNormalizerTest extends TestCase
+class NormalizeTest extends TestCase
 {
     private Serializer $serializer;
 
@@ -33,48 +34,36 @@ class GeneratedNormalizerTest extends TestCase
 
     public function testNormalize(): void
     {
-        $subject = new Php80WithoutAccessors();
-        $subject->string = 'foo1';
-        $subject->stringWithDocBlock = 'foo2';
-        $subject->float = 1.1;
-        $subject->int = 1;
-        $subject->array = ['foo' => 'bar'];
-        $subject->intCollection = [1, 2, 3];
-        $subject->nested = new DummyWithConstructor('foo');
-        $subject->objectCollection = [new DummyWithConstructor('bar1')];
+        $subject = $this->createDummyObject();
 
         $result = $this->serializer->normalize($subject);
 
         $this->assertSame('foo1', $result['string']);
         $this->assertSame(1.1, $result['float']);
         $this->assertSame(['foo' => 'bar'], $result['array']);
-        $this->assertSame(['foo' => 'foo'], $result['nested']);
         $this->assertSame([['foo' => 'bar1']], $result['objectCollection']);
         $this->assertSame([1, 2, 3], $result['intCollection']);
     }
 
-    public function testDenormalize(): void
+    public function testNormalizeCircularReference(): void
     {
-        $data = [
-            'string' => 'foo',
-            'float' => 1.1,
-            'int' => 10,
-            'array' => ['foo' => 'bar'],
-            'objectCollection' => [
-                ['foo' => 'bar'],
-                ['foo' => 'baz'],
-            ],
-            'intCollection' => [1, 2, 3, 4]
-        ];
+        $this->expectException(CircularReferenceException::class);
+        $subject = $this->createDummyObject();
+        $subject->nested = $subject;
+        $this->serializer->normalize($subject);
+    }
 
-        $result = $this->serializer->denormalize($data, Php80WithoutAccessors::class);
+    private function createDummyObject(): Php80WithoutAccessors
+    {
+        $object = new Php80WithoutAccessors();
+        $object->string = 'foo1';
+        $object->stringWithDocBlock = 'foo2';
+        $object->float = 1.1;
+        $object->int = 1;
+        $object->array = ['foo' => 'bar'];
+        $object->intCollection = [1, 2, 3];
+        $object->objectCollection = [new DummyWithConstructor('bar1')];
 
-        $this->assertInstanceOf(Php80WithoutAccessors::class, $result);
-        $this->assertSame('foo', $result->string);
-        $this->assertSame(1.1, $result->float);
-        $this->assertSame(['foo' => 'bar'], $result->array);
-        $this->assertCount(2, $result->objectCollection);
-        $this->assertSame('bar', $result->objectCollection[0]->foo);
-        $this->assertSame('baz', $result->objectCollection[1]->foo);
+        return $object;
     }
 }

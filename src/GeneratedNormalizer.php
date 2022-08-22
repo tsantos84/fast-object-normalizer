@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Tsantos\Symfony\Serializer\Normalizer;
 
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Serializer\SerializerAwareInterface;
 use Symfony\Component\Serializer\SerializerAwareTrait;
 
-final class GeneratedNormalizer implements NormalizerInterface, DenormalizerInterface, SerializerAwareInterface
+final class GeneratedNormalizer extends AbstractNormalizer implements NormalizerInterface, DenormalizerInterface, SerializerAwareInterface
 {
     use SerializerAwareTrait;
 
@@ -42,6 +43,10 @@ final class GeneratedNormalizer implements NormalizerInterface, DenormalizerInte
 
     public function normalize(mixed $object, string $format = null, array $context = [])
     {
+        if ($this->isCircularReference($object, $context)) {
+            return $this->handleCircularReference($object, $format, $context);
+        }
+
         $normalizer = $this->getNormalizer($object);
 
         return $normalizer->normalize($object, $format, $context);
