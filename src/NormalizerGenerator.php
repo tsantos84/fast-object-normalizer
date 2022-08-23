@@ -132,32 +132,24 @@ final class NormalizerGenerator
         $bodyLines = ['$allowedAttributes = $context[\'allowed_attributes\'][\''.$metadata->getName().'\'] ?? self::$allowedAttributes;'];
         foreach ($metadata->getAttributesMetadata() as $property) {
             if ($property->isIgnored()) {
-                $bodyLines[] = '// skiping property "' . $property->getName() . '" as it was ignored';
+                $bodyLines[] = CodeGenerator::comment('skiping property "' . $property->getName() . '" as it was ignored');
                 continue;
             }
-            $methodSuffix = ucfirst($property->name);
-            $accessor = match (true) {
-                $metadata->getReflectionClass()->hasMethod('get' . $methodSuffix) => '$object->get' . $methodSuffix . '()',
-                $metadata->getReflectionClass()->hasMethod('is' . $methodSuffix) => '$object->is' . $methodSuffix . '()',
-                default => '$object->' . $property->name,
-            };
-
+            $getter = sprintf(CodeGenerator::generateGetter($metadata->getReflectionClass(), $property->getName()), '$object');
             $types = (array) $this->propertyInfo->getTypes($metadata->name, $property->name);
 
             foreach ($types as $type) {
                 if (Type::BUILTIN_TYPE_OBJECT === $type->getBuiltinType() || Type::BUILTIN_TYPE_ARRAY === $type->getBuiltinType()) {
-                    $accessor = sprintf('$this->serializer->normalize(%s, $format, $context);', $accessor);
+                    $getter = sprintf('$this->serializer->normalize(%s, $format, $context);', $getter);
                     break;
                 }
             }
 
-            $propertyLine = sprintf("\$data['%s'] = %s;", $property->getSerializedName() ?? $property->getName(), $accessor);
-            $propertyLine = <<<STRING
-if (isset(\$allowedAttributes['{$property->name}'])) {
-    $propertyLine
-}
-STRING;
-
+            $propertyLine = sprintf("\$data['%s'] = %s;", $property->getSerializedName() ?? $property->getName(), $getter);
+            $propertyLine = CodeGenerator::wrapIf(
+                CodeGenerator::isset("\$allowedAttributes['$property->name']"),
+                $propertyLine
+            );
             $bodyLines[] = $propertyLine;
         }
 
@@ -195,16 +187,11 @@ STRING
 
         foreach ($metadata->getAttributesMetadata() as $property) {
             if ($property->isIgnored()) {
-                $bodyLines[] = '// skiping property "' . $property->getName() . '" as it was ignored';
+                $bodyLines[] = CodeGenerator::comment('skiping property "' . $property->getName() . '" as it was ignored');
                 continue;
             }
             $serializedName = $property->getSerializedName() ?? $property->getName();
-            $methodSuffix = ucfirst($property->name);
-            $writer = match (true) {
-                $metadata->getReflectionClass()->hasMethod('set' . $methodSuffix) => '$object->set' . $methodSuffix . '(%s)',
-                $metadata->getReflectionClass()->hasMethod('with' . $methodSuffix) => '$object->with' . $methodSuffix . '(%s)',
-                default => '$object->' . $property->name . ' = %s',
-            };
+            $setter = CodeGenerator::generateSetter($metadata->getReflectionClass(), $property->getName());
             $rawData = $denormalizedValue = sprintf('$data[\'%s\']', $serializedName);
             $nullable = true;
             $dataType = null;
@@ -230,7 +217,7 @@ STRING
                 }
             }
 
-            $propertyCode = sprintf($writer, $denormalizedValue);
+            $propertyCode = sprintf($setter, '$object', $denormalizedValue);
 
             $propertyCode = <<<STRING
 if (isset(\$allowedAttributes['{$property->name}']) && array_key_exists('$serializedName', \$data)) {
@@ -327,18 +314,5 @@ STRING;
         $bodyLines[] = sprintf('return new \%s(%s);', $metadata->getName(), join(', ', $params));
 
         $newInstanceMethod->setBody(join(PHP_EOL, $bodyLines));
-    }
-
-    private function getCastString(?string $scalarType): string
-    {
-        return match ($scalarType) {
-            Type::BUILTIN_TYPE_BOOL,
-            Type::BUILTIN_TYPE_FLOAT,
-            Type::BUILTIN_TYPE_INT,
-            Type::BUILTIN_TYPE_STRING => sprintf('(%s)', $scalarType),
-            Type::BUILTIN_TYPE_TRUE,
-            Type::BUILTIN_TYPE_FALSE => '(bool)',
-            default => ''
-        };
     }
 }
