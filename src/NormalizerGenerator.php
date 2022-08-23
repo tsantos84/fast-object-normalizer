@@ -12,7 +12,6 @@ use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractorInterface;
 use Symfony\Component\PropertyInfo\Type;
-use Symfony\Component\Serializer\Mapping\AttributeMetadataInterface;
 use Symfony\Component\Serializer\Mapping\ClassMetadataInterface;
 use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactoryInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
@@ -130,6 +129,7 @@ final class NormalizerGenerator
         $normalizeMethod->addParameter('context', [])->setType('array');
 
         $bodyLines = ['$allowedAttributes = $context[\'allowed_attributes\'][\''.$metadata->getName().'\'] ?? self::$allowedAttributes;'];
+        $bodyLines[] = '$data = [];';
         foreach ($metadata->getAttributesMetadata() as $property) {
             if ($property->isIgnored()) {
                 $bodyLines[] = CodeGenerator::comment('skiping property "' . $property->getName() . '" as it was ignored');
@@ -153,14 +153,8 @@ final class NormalizerGenerator
             $bodyLines[] = $propertyLine;
         }
 
-        $code = join(PHP_EOL, $bodyLines);
-
-        $normalizeMethod->setBody(<<<CODE
-    \$data = [];
-$code
-return \$data;
-CODE
-        );
+        $bodyLines[] = 'return $data;';
+        $normalizeMethod->setBody(CodeGenerator::dumpCode($bodyLines));
     }
 
     private function buildSupportsNormalizationMethod(ClassType $class, ClassMetadataInterface $metadata): void
@@ -217,20 +211,15 @@ STRING
                 }
             }
 
-            $propertyCode = sprintf($setter, '$object', $denormalizedValue);
-
-            $propertyCode = <<<STRING
-if (isset(\$allowedAttributes['{$property->name}']) && array_key_exists('$serializedName', \$data)) {
-    $propertyCode;
-}
-STRING;
+            $propertyCode = sprintf($setter . ';', '$object', $denormalizedValue);
+            $propertyCode = CodeGenerator::wrapIf("isset(\$allowedAttributes['$property->name']) && array_key_exists('$serializedName', \$data)", $propertyCode);
 
             $bodyLines[] = $propertyCode;
         }
 
         $bodyLines[] = 'return $object;';
 
-        $denormalize->setBody(join(PHP_EOL, $bodyLines));
+        $denormalize->setBody(CodeGenerator::dumpCode($bodyLines));
     }
 
     private function buildSupportsDenormalizationMethod(ClassType $class, ClassMetadataInterface $metadata): void
@@ -302,17 +291,12 @@ STRING
                 $propertyCode = sprintf("\$args['%s'] = \$this->serializer->denormalize(\$data['%s'], '%s', \$format, \$context)", $parameter->getName(), $serializedName, $dataType);
             }
 
-            $propertyCode = <<<STRING
-if (isset(\$allowedAttributes['$parameter->name']) && array_key_exists('$serializedName', \$data)) {
-    $propertyCode;
-}
-STRING;
-            $bodyLines[] = $propertyCode;
+            $bodyLines[] = CodeGenerator::wrapIf("isset(\$allowedAttributes['$parameter->name']) && array_key_exists('$serializedName', \$data)", $propertyCode . ';');;
             $params[] = sprintf("\$args['%s']", $parameter->getName());
         }
 
         $bodyLines[] = sprintf('return new \%s(%s);', $metadata->getName(), join(', ', $params));
 
-        $newInstanceMethod->setBody(join(PHP_EOL, $bodyLines));
+        $newInstanceMethod->setBody(CodeGenerator::dumpCode($bodyLines));
     }
 }

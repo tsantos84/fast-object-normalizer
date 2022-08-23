@@ -76,7 +76,12 @@ CODE;
 
     public static function comment(string $content): string
     {
-        return PHP_EOL . '//' . PHP_EOL . '// '. $content . PHP_EOL . '//' . PHP_EOL;
+        return '//' . PHP_EOL . '// '. $content . PHP_EOL . '//';
+    }
+
+    public static function dumpCode(array $codeLines, int $breakLines = 2): string
+    {
+        return implode(str_repeat(PHP_EOL, $breakLines), $codeLines);
     }
 
     public static function castVar(string $content, string $type): string
