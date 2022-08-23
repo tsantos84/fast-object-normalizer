@@ -80,6 +80,14 @@ class NormalizeTest extends TestCase
         $this->serializer->normalize($subject);
     }
 
+    public function testNormalizeWithSerializedNameAttribute(): void
+    {
+        $subject = $this->createDummyObject();
+        $result = $this->serializer->normalize($subject);
+        $this->assertArrayHasKey('barName', $result);
+        $this->assertArrayNotHasKey('fooName', $result);
+    }
+
     private function createDummyObject(): Php80WithoutAccessors
     {
         $object = new Php80WithoutAccessors();

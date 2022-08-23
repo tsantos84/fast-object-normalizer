@@ -12,6 +12,7 @@ use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractorInterface;
 use Symfony\Component\PropertyInfo\Type;
+use Symfony\Component\Serializer\Mapping\ClassMetadataInterface;
 use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactoryInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
@@ -64,13 +65,13 @@ final class NormalizerGenerator
             ];
         }
 
+        $metadata = $metadataFactory->getMetadataFor($ref->getName());
+
         $class = new ClassType($className);
         $class
             ->addComment('Auto-generated class! Do not change it by yourself.');
 
-        if (null !== $metadataFactory) {
-            $this->buildAllowedAttributes($class, $ref, $metadataFactory);
-        }
+        $this->buildAllowedAttributes($class, $metadata);
 
         $class->addMethod('__construct')
             ->addPromotedParameter('serializer')
@@ -78,7 +79,7 @@ final class NormalizerGenerator
             ->setPrivate()
             ->setReadOnly();
 
-        $this->buildNormalizeMethods($class, $ref);
+        $this->buildNormalizeMethods($class, $metadata);
         $this->buildDenormalizeMethods($class, $ref);
 
         $namespace = new PhpNamespace($this->namespace);
@@ -95,9 +96,8 @@ final class NormalizerGenerator
         ];
     }
 
-    private function buildAllowedAttributes(ClassType $classType, \ReflectionClass $ref, ClassMetadataFactoryInterface $metadataFactory): void
+    private function buildAllowedAttributes(ClassType $classType, ClassMetadataInterface $metadata): void
     {
-        $metadata = $metadataFactory->getMetadataFor($ref->getName());
         $allowedAttributes = [];
 
         foreach ($metadata->getAttributesMetadata() as $attributeMetadata) {
@@ -113,7 +113,7 @@ final class NormalizerGenerator
             ->setPrivate();
     }
 
-    private function buildNormalizeMethods(ClassType $class, \ReflectionClass $ref): void
+    private function buildNormalizeMethods(ClassType $class, ClassMetadataInterface $metadata): void
     {
         $class->addImplement(NormalizerInterface::class);
         $normalizeMethod = $class->addMethod('normalize');
@@ -121,16 +121,16 @@ final class NormalizerGenerator
         $normalizeMethod->addParameter('format', null)->setType('string');
         $normalizeMethod->addParameter('context', [])->setType('array');
 
-        $bodyLines = ['$allowedAttributes = $context[\'allowed_attributes\'][\''.$ref->getName().'\'] ?? self::$allowedAttributes;'];
-        foreach ($ref->getProperties() as $property) {
+        $bodyLines = ['$allowedAttributes = $context[\'allowed_attributes\'][\''.$metadata->getName().'\'] ?? self::$allowedAttributes;'];
+        foreach ($metadata->getAttributesMetadata() as $property) {
             $methodSuffix = ucfirst($property->name);
             $accessor = match (true) {
-                $ref->hasMethod('get' . $methodSuffix) => '$object->get' . $methodSuffix,
-                $ref->hasMethod('is' . $methodSuffix) => '$object->is' . $methodSuffix,
+                $metadata->getReflectionClass()->hasMethod('get' . $methodSuffix) => '$object->get' . $methodSuffix,
+                $metadata->getReflectionClass()->hasMethod('is' . $methodSuffix) => '$object->is' . $methodSuffix,
                 default => '$object->' . $property->name,
             };
 
-            $types = (array) $this->propertyInfo->getTypes($ref->name, $property->name);
+            $types = (array) $this->propertyInfo->getTypes($metadata->name, $property->name);
 
             foreach ($types as $type) {
                 if (Type::BUILTIN_TYPE_OBJECT === $type->getBuiltinType() || Type::BUILTIN_TYPE_ARRAY === $type->getBuiltinType()) {
@@ -139,7 +139,7 @@ final class NormalizerGenerator
                 }
             }
 
-            $propertyLine = sprintf("\$data['%s'] = %s;", $property->name, $accessor);
+            $propertyLine = sprintf("\$data['%s'] = %s;", $property->getSerializedName() ?? $property->getName(), $accessor);
             $propertyLine = <<<STRING
 if (isset(\$allowedAttributes['$property->name'])) {
     $propertyLine
@@ -162,7 +162,7 @@ CODE
         $supportsNormalizeMethod->addParameter('data')->setType('mixed');
         $supportsNormalizeMethod->addParameter('format', null)->setType('string');
         $supportsNormalizeMethod->setBody(<<<STRING
-return \$data instanceof \\$ref->name;
+return \$data instanceof \\$metadata->name;
 STRING
         );
     }

@@ -6,6 +6,7 @@ namespace Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures;
 
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Serializer\Annotation\Ignore;
+use Symfony\Component\Serializer\Annotation\SerializedName;
 
 class Php80WithoutAccessors
 {
@@ -31,4 +32,7 @@ class Php80WithoutAccessors
 
     #[Ignore]
     public ?string $ignored = null;
+
+    #[SerializedName('barName')]
+    public ?string $fooName = null;
 }
