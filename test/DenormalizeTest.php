@@ -60,4 +60,22 @@ final class DenormalizeTest extends TestCase
         $this->assertSame('bar', $result->objectCollection[0]->foo);
         $this->assertSame('baz', $result->objectCollection[1]->foo);
     }
+
+    public function testDenormalizeWithGroups(): void
+    {
+        $data = [
+            'string' => 'foo',
+            'int' => 10,
+            'nullable' => 1
+        ];
+
+        $result = $this->serializer->denormalize($data, Php80WithoutAccessors::class, 'json', [
+            'groups' => ['foo-group']
+        ]);
+
+        $this->assertInstanceOf(Php80WithoutAccessors::class, $result);
+        $this->assertSame('foo', $result->string);
+        $this->assertSame(10, $result->int);
+        $this->assertNull($result->nullable);
+    }
 }

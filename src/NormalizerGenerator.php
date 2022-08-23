@@ -80,7 +80,7 @@ final class NormalizerGenerator
             ->setReadOnly();
 
         $this->buildNormalizeMethods($class, $metadata);
-        $this->buildDenormalizeMethods($class, $ref);
+        $this->buildDenormalizeMethods($class, $metadata);
 
         $namespace = new PhpNamespace($this->namespace);
         $namespace->add($class);
@@ -102,7 +102,7 @@ final class NormalizerGenerator
 
         foreach ($metadata->getAttributesMetadata() as $attributeMetadata) {
             if (!$attributeMetadata->isIgnored()) {
-                $allowedAttributes[$attributeMetadata->getName()] = true;
+                $allowedAttributes[$attributeMetadata->getSerializedName() ?? $attributeMetadata->getName()] = true;
             }
         }
 
@@ -123,7 +123,12 @@ final class NormalizerGenerator
 
         $bodyLines = ['$allowedAttributes = $context[\'allowed_attributes\'][\''.$metadata->getName().'\'] ?? self::$allowedAttributes;'];
         foreach ($metadata->getAttributesMetadata() as $property) {
+            if ($property->isIgnored()) {
+                $bodyLines[] = '// skiping property "' . $property->getName() . '" as it was ignored';
+                continue;
+            }
             $methodSuffix = ucfirst($property->name);
+            $serializedName = $property->getSerializedName() ?? $property->getName();
             $accessor = match (true) {
                 $metadata->getReflectionClass()->hasMethod('get' . $methodSuffix) => '$object->get' . $methodSuffix,
                 $metadata->getReflectionClass()->hasMethod('is' . $methodSuffix) => '$object->is' . $methodSuffix,
@@ -141,7 +146,7 @@ final class NormalizerGenerator
 
             $propertyLine = sprintf("\$data['%s'] = %s;", $property->getSerializedName() ?? $property->getName(), $accessor);
             $propertyLine = <<<STRING
-if (isset(\$allowedAttributes['$property->name'])) {
+if (isset(\$allowedAttributes['$serializedName'])) {
     $propertyLine
 }
 STRING;
@@ -167,7 +172,7 @@ STRING
         );
     }
 
-    private function buildDenormalizeMethods(ClassType $class, \ReflectionClass $ref): void
+    private function buildDenormalizeMethods(ClassType $class, ClassMetadataInterface $metadata): void
     {
         $class
             ->addImplement(DenormalizerInterface::class)
@@ -180,20 +185,26 @@ STRING
         $denormalize->addParameter('context', [])->setType('array');
 
         $bodyLines = ['$object = $context[\''.AbstractNormalizer::OBJECT_TO_POPULATE.'\'] ?? $this->newInstance($data, $context);'];
+        $bodyLines[] = '$allowedAttributes = $context[\'allowed_attributes\'][\''.$metadata->getName().'\'] ?? self::$allowedAttributes;';
 
-        foreach ($ref->getProperties() as $property) {
+        foreach ($metadata->getAttributesMetadata() as $property) {
+            if ($property->isIgnored()) {
+                $bodyLines[] = '// skiping property "' . $property->getName() . '" as it was ignored';
+                continue;
+            }
+            $serializedName = $property->getSerializedName() ?? $property->getName();
             $methodSuffix = ucfirst($property->name);
             $writer = match (true) {
-                $ref->hasMethod('set' . $methodSuffix) => 'set' . $methodSuffix,
-                $ref->hasMethod('with' . $methodSuffix) => 'with' . $methodSuffix,
+                $metadata->getReflectionClass()->hasMethod('set' . $methodSuffix) => 'set' . $methodSuffix,
+                $metadata->getReflectionClass()->hasMethod('with' . $methodSuffix) => 'with' . $methodSuffix,
                 default => $property->name,
             };
-            $rawData = $denormalizedValue = sprintf('$data[\'%s\']', $property->name);
+            $rawData = $denormalizedValue = sprintf('$data[\'%s\']', $serializedName);
             $nullable = true;
             $dataType = null;
             $needsDenormalization = false;
 
-            if (null !== $types = $this->propertyInfo->getTypes($ref->name, $property->name)) {
+            if (null !== $types = $this->propertyInfo->getTypes($metadata->name, $property->name)) {
                 $type = $types[0];
                 $nullable = $type->isNullable();
                 if (Type::BUILTIN_TYPE_OBJECT === $type->getBuiltinType()) {
@@ -213,18 +224,21 @@ STRING
                 }
             }
 
-            $propertyCode = sprintf("\$object->%s = %s%s", $writer, $this->getCastString($dataType), $denormalizedValue);
+            $propertyCode = sprintf("\$object->%s = %s%s;", $writer, $this->getCastString($dataType), $denormalizedValue);
 
             if (!$nullable) {
                 $propertyCode = <<<STRING
 if (isset($rawData)) {
-    $propertyCode;
-}
-
+        $propertyCode;
+    }
 STRING;
-            } elseif (!$needsDenormalization) {
-                $propertyCode .= ' ?? null;';
             }
+
+            $propertyCode = <<<STRING
+if (isset(\$allowedAttributes['$serializedName'])) {
+    $propertyCode
+}
+STRING;
 
             $bodyLines[] = $propertyCode;
         }
@@ -238,7 +252,7 @@ STRING;
         $supportsNormalizeMethod->addParameter('type')->setType('string');
         $supportsNormalizeMethod->addParameter('format', null)->setType('string');
         $supportsNormalizeMethod->setBody(<<<STRING
-return \$type === '\\$ref->name';
+return \$type === '\\$metadata->name';
 STRING
         );
 
@@ -246,13 +260,13 @@ STRING
         $newInstanceMethod->addParameter('data', [])->setType('array');
         $newInstanceMethod->addParameter('context', [])->setType('array');
         $params = [];
-        if ((null !== $constructor = $ref->getConstructor()) && $constructor->getNumberOfParameters() > 0) {
+        if ((null !== $constructor = $metadata->getReflectionClass()->getConstructor()) && $constructor->getNumberOfParameters() > 0) {
             foreach ($constructor->getParameters() as $parameter) {
                 $params[] = sprintf("\$data['%s']", $parameter->getName());
             }
         }
 
-        $newInstanceMethod->setBody(sprintf('return new \%s(%s);', $ref->getName(), join(', ', $params)));
+        $newInstanceMethod->setBody(sprintf('return new \%s(%s);', $metadata->getName(), join(', ', $params)));
     }
 
     private function getCastString(?string $scalarType): string

@@ -39,6 +39,10 @@ final class GeneratedNormalizer extends AbstractNormalizer implements Normalizer
     {
         $denormalizer = $this->loadNormalizer($type);
 
+        if (false !== $attributes = $this->getAllowedAttributes($type, $context, true)) {
+            $context['allowed_attributes'][$type] = array_flip($attributes);
+        }
+
         return $denormalizer->denormalize($data, $type, $format, $context);
     }
 
