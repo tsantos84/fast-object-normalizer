@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tsantos\Symfony\Serializer\Normalizer;
 
+use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactoryInterface;
+use Symfony\Component\Serializer\NameConverter\NameConverterInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
@@ -24,14 +26,18 @@ final class GeneratedNormalizer extends AbstractNormalizer implements Normalizer
     private static array $loaded = [];
 
     public function __construct(
-        private readonly NormalizerGenerator $generator
+        private readonly NormalizerGenerator $generator,
+        ClassMetadataFactoryInterface $classMetadataFactory = null,
+        NameConverterInterface $nameConverter = null,
+        array $defaultContext = []
     )
     {
+        parent::__construct($classMetadataFactory, $nameConverter, $defaultContext);
     }
 
     public function denormalize(mixed $data, string $type, string $format = null, array $context = [])
     {
-        $denormalizer = $this->getNormalizer($type);
+        $denormalizer = $this->loadNormalizer($type);
 
         return $denormalizer->denormalize($data, $type, $format, $context);
     }
@@ -47,7 +53,11 @@ final class GeneratedNormalizer extends AbstractNormalizer implements Normalizer
             return $this->handleCircularReference($object, $format, $context);
         }
 
-        $normalizer = $this->getNormalizer($object);
+        $normalizer = $this->loadNormalizer($object, $context);
+
+        if (false !== $attributes = $this->getAllowedAttributes($object, $context, true)) {
+            $context['allowed_attributes'][get_class($object)] = array_flip($attributes);
+        }
 
         return $normalizer->normalize($object, $format, $context);
     }
@@ -57,7 +67,7 @@ final class GeneratedNormalizer extends AbstractNormalizer implements Normalizer
         return is_object($data);
     }
 
-    private function getNormalizer(string|object $classOrObject): NormalizerInterface & DenormalizerInterface & ObjectFactoryInterface
+    private function loadNormalizer(string|object $classOrObject, array $context = []): NormalizerInterface & DenormalizerInterface & ObjectFactoryInterface
     {
         $class = is_object($classOrObject) ? get_class($classOrObject) : $classOrObject;
 
@@ -65,7 +75,7 @@ final class GeneratedNormalizer extends AbstractNormalizer implements Normalizer
             return self::$loaded[$class];
         }
 
-        $result = $this->generator->generate($classOrObject);
+        $result = $this->generator->generate($classOrObject, $this->classMetadataFactory);
 
         if (!class_exists($result['className'], false)) {
             include_once $result['filename'];

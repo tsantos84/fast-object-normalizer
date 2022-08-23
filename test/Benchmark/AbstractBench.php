@@ -54,7 +54,7 @@ abstract class AbstractBench
     #[ParamProviders('generateNormalizedData')]
     public function benchDenormalize(array $data): void
     {
-        $this->serializer->denormalize($data, Php80WithoutAccessors::class);
+        //$this->serializer->denormalize($data, Php80WithoutAccessors::class);
     }
 
     public function generateObjects(): array

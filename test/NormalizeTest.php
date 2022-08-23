@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace Tsantos\Test\Symfony\Serializer\Normalizer;
 
+use Doctrine\Common\Annotations\AnnotationReader;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Exception\CircularReferenceException;
+use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactory;
+use Symfony\Component\Serializer\Mapping\Loader\AnnotationLoader;
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
 use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 use Symfony\Component\Serializer\Normalizer\DateTimeZoneNormalizer;
@@ -28,7 +32,10 @@ class NormalizeTest extends TestCase
             new UidNormalizer(),
             new DateTimeZoneNormalizer(),
             new ArrayDenormalizer(),
-            new GeneratedNormalizer(new NormalizerGenerator(__DIR__ . '/var'))
+            new GeneratedNormalizer(
+                generator: new NormalizerGenerator(outputDir: __DIR__ . '/var', overwrite: true),
+                classMetadataFactory: new ClassMetadataFactory(new AnnotationLoader(new AnnotationReader()))
+            )
         ], ['json' => new JsonEncoder()]);
     }
 
@@ -36,13 +43,26 @@ class NormalizeTest extends TestCase
     {
         $subject = $this->createDummyObject();
 
-        $result = $this->serializer->normalize($subject);
+        $result = $this->serializer->normalize($subject, 'json');
 
         $this->assertSame('foo1', $result['string']);
         $this->assertSame(1.1, $result['float']);
         $this->assertSame(['foo' => 'bar'], $result['array']);
         $this->assertSame([['foo' => 'bar1']], $result['objectCollection']);
         $this->assertSame([1, 2, 3], $result['intCollection']);
+    }
+
+    public function testNormalizeWithGroup(): void
+    {
+        $subject = $this->createDummyObject();
+
+        $result = $this->serializer->normalize($subject, 'json', [
+            AbstractNormalizer::GROUPS => 'foo-group'
+        ]);
+
+        $this->assertSame('foo1', $result['string']);
+        $this->assertSame(1, $result['int']);
+        $this->assertArrayNotHasKey('stringWithDocBlock', $result);
     }
 
     public function testNormalizeCircularReference(): void

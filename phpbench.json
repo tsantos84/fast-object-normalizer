@@ -6,7 +6,8 @@
     "tsantos": {
       "extends": "default",
       "aggregate": ["benchmark_name", "subject_name"],
-      "cols": { "benchmark":  null, "subject":  null, "its": null, "mode": null, "best":  null, "worst":  null, "mean": null}
+      "break": ["subject"],
+      "cols": { "benchmark":  null, "subject":  null, "its": null, "mode": null, "best":  null, "worst":  null, "mean": null, "mem_peak":  null}
     }
   }
 }

@@ -12,6 +12,7 @@ use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractorInterface;
 use Symfony\Component\PropertyInfo\Type;
+use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactoryInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
@@ -45,7 +46,7 @@ final class NormalizerGenerator
         );
     }
 
-    public function generate(object|string $target): array
+    public function generate(object|string $target, ?ClassMetadataFactoryInterface $metadataFactory): array
     {
         if (is_object($target)) {
             $target = get_class($target);
@@ -66,6 +67,10 @@ final class NormalizerGenerator
         $class = new ClassType($className);
         $class
             ->addComment('Auto-generated class! Do not change it by yourself.');
+
+        if (null !== $metadataFactory) {
+            $this->buildAllowedAttributes($class, $ref, $metadataFactory);
+        }
 
         $class->addMethod('__construct')
             ->addPromotedParameter('serializer')
@@ -90,6 +95,24 @@ final class NormalizerGenerator
         ];
     }
 
+    private function buildAllowedAttributes(ClassType $classType, \ReflectionClass $ref, ClassMetadataFactoryInterface $metadataFactory): void
+    {
+        $metadata = $metadataFactory->getMetadataFor($ref->getName());
+        $allowedAttributes = [];
+
+        foreach ($metadata->getAttributesMetadata() as $attributeMetadata) {
+            if (!$attributeMetadata->isIgnored()) {
+                $allowedAttributes[$attributeMetadata->getName()] = true;
+            }
+        }
+
+        $classType
+            ->addProperty('allowedAttributes', $allowedAttributes)
+            ->setType('array')
+            ->setStatic()
+            ->setPrivate();
+    }
+
     private function buildNormalizeMethods(ClassType $class, \ReflectionClass $ref): void
     {
         $class->addImplement(NormalizerInterface::class);
@@ -98,7 +121,7 @@ final class NormalizerGenerator
         $normalizeMethod->addParameter('format', null)->setType('string');
         $normalizeMethod->addParameter('context', [])->setType('array');
 
-        $bodyLines = [];
+        $bodyLines = ['$allowedAttributes = $context[\'allowed_attributes\'][\''.$ref->getName().'\'] ?? self::$allowedAttributes;'];
         foreach ($ref->getProperties() as $property) {
             $methodSuffix = ucfirst($property->name);
             $accessor = match (true) {
@@ -116,7 +139,14 @@ final class NormalizerGenerator
                 }
             }
 
-            $bodyLines[] = sprintf("\$data['%s'] = %s;", $property->name, $accessor);
+            $propertyLine = sprintf("\$data['%s'] = %s;", $property->name, $accessor);
+            $propertyLine = <<<STRING
+if (isset(\$allowedAttributes['$property->name'])) {
+    $propertyLine
+}
+STRING;
+
+            $bodyLines[] = $propertyLine;
         }
 
         $code = join(PHP_EOL, $bodyLines);
