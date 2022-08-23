@@ -8,6 +8,7 @@ use Doctrine\Common\Annotations\AnnotationReader;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Exception\CircularReferenceException;
+use Symfony\Component\Serializer\Mapping\ClassDiscriminatorFromClassMetadata;
 use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactory;
 use Symfony\Component\Serializer\Mapping\Loader\AnnotationLoader;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
@@ -18,6 +19,7 @@ use Symfony\Component\Serializer\Normalizer\UidNormalizer;
 use Symfony\Component\Serializer\Serializer;
 use Tsantos\Symfony\Serializer\Normalizer\GeneratedNormalizer;
 use Tsantos\Symfony\Serializer\Normalizer\NormalizerGenerator;
+use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyA;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithConstructor;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithPrivateAttribute;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\Php80WithoutAccessors;
@@ -28,6 +30,8 @@ class NormalizeTest extends TestCase
 
     protected function setUp(): void
     {
+        $classMetadataFactory = new ClassMetadataFactory(new AnnotationLoader(new AnnotationReader()));
+        $discriminator = new ClassDiscriminatorFromClassMetadata($classMetadataFactory);
         $this->serializer = new Serializer([
             new DateTimeNormalizer(),
             new UidNormalizer(),
@@ -35,7 +39,8 @@ class NormalizeTest extends TestCase
             new ArrayDenormalizer(),
             new GeneratedNormalizer(
                 generator: new NormalizerGenerator(outputDir: __DIR__ . '/var', overwrite: true),
-                classMetadataFactory: new ClassMetadataFactory(new AnnotationLoader(new AnnotationReader()))
+                classMetadataFactory: $classMetadataFactory,
+                discriminatorResolver: $discriminator
             )
         ], ['json' => new JsonEncoder()]);
     }
@@ -108,6 +113,14 @@ class NormalizeTest extends TestCase
         $result = $this->serializer->normalize($subject);
         $this->assertArrayHasKey('barName', $result);
         $this->assertArrayNotHasKey('fooName', $result);
+    }
+
+    public function testNormalizeWithClassDiscriminator(): void
+    {
+        $subject = new DummyA();
+        $result = $this->serializer->normalize($subject);
+        $this->assertArrayHasKey('type', $result);
+        $this->assertSame('dummyA   ', $result['type']);
     }
 
     private function createDummyObject(): Php80WithoutAccessors

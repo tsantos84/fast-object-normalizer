@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tsantos\Symfony\Serializer\Normalizer;
 
+use Symfony\Component\Serializer\Mapping\ClassDiscriminatorResolverInterface;
 use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactoryInterface;
 use Symfony\Component\Serializer\NameConverter\NameConverterInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
@@ -29,6 +30,7 @@ final class GeneratedNormalizer extends AbstractNormalizer implements Normalizer
         private readonly NormalizerGenerator $generator,
         ClassMetadataFactoryInterface $classMetadataFactory = null,
         NameConverterInterface $nameConverter = null,
+        private ?ClassDiscriminatorResolverInterface $discriminatorResolver = null,
         array $defaultContext = []
     )
     {
@@ -68,7 +70,7 @@ final class GeneratedNormalizer extends AbstractNormalizer implements Normalizer
 
     public function supportsNormalization(mixed $data, string $format = null)
     {
-        return is_object($data);
+        return is_object($data) && !$data instanceof \Iterator;
     }
 
     private function loadNormalizer(string|object $classOrObject, array $context = []): NormalizerInterface & DenormalizerInterface & ObjectFactoryInterface
@@ -79,7 +81,7 @@ final class GeneratedNormalizer extends AbstractNormalizer implements Normalizer
             return self::$loaded[$class];
         }
 
-        $result = $this->generator->generate($classOrObject, $this->classMetadataFactory);
+        $result = $this->generator->generate($classOrObject, $this->classMetadataFactory, $this->discriminatorResolver);
 
         if (!class_exists($result['className'], false)) {
             include_once $result['filename'];

@@ -12,6 +12,7 @@ use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractorInterface;
 use Symfony\Component\PropertyInfo\Type;
+use Symfony\Component\Serializer\Mapping\ClassDiscriminatorResolverInterface;
 use Symfony\Component\Serializer\Mapping\ClassMetadataInterface;
 use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactoryInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
@@ -47,7 +48,7 @@ final class NormalizerGenerator
         );
     }
 
-    public function generate(object|string $target, ?ClassMetadataFactoryInterface $metadataFactory): array
+    public function generate(object|string $target, ClassMetadataFactoryInterface $metadataFactory, ?ClassDiscriminatorResolverInterface $discriminatorResolver = null): array
     {
         if (is_object($target)) {
             $target = get_class($target);
@@ -91,7 +92,7 @@ final class NormalizerGenerator
             ->setPrivate()
             ->setReadOnly();
 
-        $this->buildNormalizeMethod($class, $metadata);
+        $this->buildNormalizeMethod($class, $metadata, $discriminatorResolver);
         $this->buildSupportsNormalizationMethod($class, $metadata);
 
         $this->buildDenormalizeMethod($class, $metadata);
@@ -130,8 +131,17 @@ final class NormalizerGenerator
             ->setPrivate();
     }
 
-    private function buildNormalizeMethod(ClassType $class, ClassMetadataInterface $metadata): void
+    private function buildNormalizeMethod(ClassType $class, ClassMetadataInterface $metadata, ClassDiscriminatorResolverInterface $discriminatorResolver = null): void
     {
+        $discriminatorProperty = null;
+        $discriminatorValue = null;
+
+        if (null !== $discriminatorResolver) {
+            $discriminatorMapping = $discriminatorResolver->getMappingForMappedObject($metadata->getName());
+            $discriminatorProperty = $discriminatorMapping->getTypeProperty();
+            $discriminatorValue = array_search($metadata->getName(), $discriminatorMapping->getTypesMapping());
+        }
+
         $normalizeMethod = $class->addMethod('normalize');
         $normalizeMethod->addParameter('object')->setType('mixed');
         $normalizeMethod->addParameter('format', null)->setType('string');
@@ -139,9 +149,18 @@ final class NormalizerGenerator
 
         $bodyLines = ['$allowedAttributes = $context[\'allowed_attributes\'][\''.$metadata->getName().'\'] ?? self::$allowedAttributes;'];
         $bodyLines[] = '$data = [];';
+
+        if (null !== $discriminatorProperty && null !== $discriminatorValue) {
+            $bodyLines[] = sprintf("\$data['%s'] = '%s';", $discriminatorProperty, $discriminatorValue);
+        }
+
         foreach ($metadata->getAttributesMetadata() as $property) {
             if ($property->isIgnored()) {
                 $bodyLines[] = CodeGenerator::comment('skiping property "' . $property->getName() . '" as it was ignored');
+                continue;
+            }
+
+            if ($property->getName() === $discriminatorProperty) {
                 continue;
             }
 
