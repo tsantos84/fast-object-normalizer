@@ -8,6 +8,28 @@ use Symfony\Component\PropertyInfo\Type;
 
 final class CodeGenerator
 {
+    public static function isWritable(\ReflectionClass $refClass, string $property): bool
+    {
+        if (null !== self::getSetterMethodName($refClass, $property)) {
+            return true;
+        }
+
+        $refProperty = $refClass->getProperty($property);
+
+        return $refProperty->isPublic();
+    }
+
+    public static function isReadable(\ReflectionClass $refClass, string $property): bool
+    {
+        if (null !== self::getGetterMethodName($refClass, $property)) {
+            return true;
+        }
+
+        $refProperty = $refClass->getProperty($property);
+
+        return $refProperty->isPublic();
+    }
+
     public static function getSetterMethodName(\ReflectionClass $refClass, string $property): ?string
     {
         foreach (['set', 'with'] as $prefix) {
@@ -48,6 +70,11 @@ final class CodeGenerator
         }
 
         return '%s->'.$property;
+    }
+
+    public static function generateGetterByRefl(string $property): string
+    {
+        return '%s->getProperty(\'' . $property . '\')->getValue(%s)';
     }
 
     public static function wrapIf(string $condition, string $blockTrue, ?string $elseBlock = null): string

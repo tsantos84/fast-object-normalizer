@@ -74,9 +74,18 @@ final class NormalizerGenerator
             ->addImplement(ObjectFactoryInterface::class)
             ->addComment('Auto-generated class! Do not change it by yourself.');
 
+        $class
+            ->addProperty('refClass', null)
+            ->setType(\ReflectionClass::class)
+            ->setNullable()
+            ->setPrivate()
+            ->setStatic();
+
         $this->buildAllowedAttributes($class, $metadata);
 
-        $class->addMethod('__construct')
+        $constructor = $class->addMethod('__construct');
+        $constructor->setBody(CodeGenerator::wrapIf('null === self::$refClass', 'self::$refClass = new \ReflectionClass(\''.$ref->getName().'\');'));
+        $constructor
             ->addPromotedParameter('serializer')
             ->setType(Serializer::class)
             ->setPrivate()
@@ -135,7 +144,11 @@ final class NormalizerGenerator
                 $bodyLines[] = CodeGenerator::comment('skiping property "' . $property->getName() . '" as it was ignored');
                 continue;
             }
-            $getter = sprintf(CodeGenerator::generateGetter($metadata->getReflectionClass(), $property->getName()), '$object');
+
+            $getter = CodeGenerator::isReadable($metadata->getReflectionClass(), $property->getName())
+                ? sprintf(CodeGenerator::generateGetter($metadata->getReflectionClass(), $property->getName()), '$object')
+                : sprintf(CodeGenerator::generateGetterByRefl($property->getName()), 'self::$refClass', '$object');
+
             $types = (array) $this->propertyInfo->getTypes($metadata->name, $property->name);
 
             foreach ($types as $type) {
@@ -291,7 +304,7 @@ STRING
                 $propertyCode = sprintf("\$args['%s'] = \$this->serializer->denormalize(\$data['%s'], '%s', \$format, \$context)", $parameter->getName(), $serializedName, $dataType);
             }
 
-            $bodyLines[] = CodeGenerator::wrapIf("isset(\$allowedAttributes['$parameter->name']) && array_key_exists('$serializedName', \$data)", $propertyCode . ';');;
+            $bodyLines[] = CodeGenerator::wrapIf("isset(\$allowedAttributes['$parameter->name']) && array_key_exists('$serializedName', \$data)", $propertyCode . ';');
             $params[] = sprintf("\$args['%s']", $parameter->getName());
         }
 
