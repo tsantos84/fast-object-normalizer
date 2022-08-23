@@ -201,8 +201,8 @@ STRING
             $serializedName = $property->getSerializedName() ?? $property->getName();
             $methodSuffix = ucfirst($property->name);
             $writer = match (true) {
-                $metadata->getReflectionClass()->hasMethod('set' . $methodSuffix) => '$object->set' . $methodSuffix . ('%s'),
-                $metadata->getReflectionClass()->hasMethod('with' . $methodSuffix) => '$object->with' . $methodSuffix . ('%s'),
+                $metadata->getReflectionClass()->hasMethod('set' . $methodSuffix) => '$object->set' . $methodSuffix . '(%s)',
+                $metadata->getReflectionClass()->hasMethod('with' . $methodSuffix) => '$object->with' . $methodSuffix . '(%s)',
                 default => '$object->' . $property->name . ' = %s',
             };
             $rawData = $denormalizedValue = sprintf('$data[\'%s\']', $serializedName);
