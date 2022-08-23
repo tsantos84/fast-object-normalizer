@@ -99,6 +99,7 @@ class NormalizeTest extends TestCase
         $object->intCollection = [1, 2, 3];
         $object->objectCollection = [new DummyWithConstructor('bar1')];
         $object->ignored = 'ignored';
+        $object->fooName = 'foo';
 
         return $object;
     }

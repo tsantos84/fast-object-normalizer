@@ -102,7 +102,7 @@ final class NormalizerGenerator
 
         foreach ($metadata->getAttributesMetadata() as $attributeMetadata) {
             if (!$attributeMetadata->isIgnored()) {
-                $allowedAttributes[$attributeMetadata->getSerializedName() ?? $attributeMetadata->getName()] = true;
+                $allowedAttributes[$attributeMetadata->getName()] = true;
             }
         }
 
@@ -146,7 +146,7 @@ final class NormalizerGenerator
 
             $propertyLine = sprintf("\$data['%s'] = %s;", $property->getSerializedName() ?? $property->getName(), $accessor);
             $propertyLine = <<<STRING
-if (isset(\$allowedAttributes['$serializedName'])) {
+if (isset(\$allowedAttributes['{$property->name}'])) {
     $propertyLine
 }
 STRING;
@@ -227,7 +227,7 @@ STRING
             $propertyCode = sprintf("\$object->%s = %s%s", $writer, $this->getCastString($dataType), $denormalizedValue);
 
             $propertyCode = <<<STRING
-if (isset(\$allowedAttributes['$serializedName']) && array_key_exists('$serializedName', \$data)) {
+if (isset(\$allowedAttributes['{$property->name}']) && array_key_exists('$serializedName', \$data)) {
     $propertyCode;
 }
 STRING;
