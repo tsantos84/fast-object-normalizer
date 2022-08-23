@@ -6,5 +6,5 @@ namespace Tsantos\Symfony\Serializer\Normalizer;
 
 interface ObjectFactoryInterface
 {
-    public function newInstance(array $data = [], array $context = []): object;
+    public function newInstance(array $data = [], string $format = null, array $context = []): object;
 }

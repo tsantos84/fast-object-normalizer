@@ -12,6 +12,7 @@ use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractorInterface;
 use Symfony\Component\PropertyInfo\Type;
+use Symfony\Component\Serializer\Mapping\AttributeMetadataInterface;
 use Symfony\Component\Serializer\Mapping\ClassMetadataInterface;
 use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactoryInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
@@ -189,7 +190,7 @@ STRING
         $denormalize->addParameter('format', null)->setType('string');
         $denormalize->addParameter('context', [])->setType('array');
 
-        $bodyLines = ['$object = $context[\''.AbstractNormalizer::OBJECT_TO_POPULATE.'\'] ?? $this->newInstance($data, $context);'];
+        $bodyLines = ['$object = $context[\''.AbstractNormalizer::OBJECT_TO_POPULATE.'\'] ?? $this->newInstance($data, $format, $context);'];
         $bodyLines[] = '$allowedAttributes = $context[\'allowed_attributes\'][\''.$metadata->getName().'\'] ?? self::$allowedAttributes;';
 
         foreach ($metadata->getAttributesMetadata() as $property) {
@@ -261,15 +262,70 @@ STRING
     {
         $newInstanceMethod = $class->addMethod('newInstance')->setReturnType('object');
         $newInstanceMethod->addParameter('data', [])->setType('array');
+        $newInstanceMethod->addParameter('format', null)->setType('string');
         $newInstanceMethod->addParameter('context', [])->setType('array');
-        $params = [];
-        if ((null !== $constructor = $metadata->getReflectionClass()->getConstructor()) && $constructor->getNumberOfParameters() > 0) {
-            foreach ($constructor->getParameters() as $parameter) {
-                $params[] = sprintf("\$data['%s']", $parameter->getName());
-            }
+
+        if ((null === $constructor = $metadata->getReflectionClass()->getConstructor()) || $constructor->getNumberOfParameters() === 0) {
+            $newInstanceMethod->setBody(sprintf('return new \%s();', $metadata->getName()));
         }
 
-        $newInstanceMethod->setBody(sprintf('return new \%s(%s);', $metadata->getName(), join(', ', $params)));
+        $params = [];
+        $bodyLines = ['$args = [];'];
+        $bodyLines[] = '$allowedAttributes = $context[\'allowed_attributes\'][\''.$metadata->getName().'\'] ?? self::$allowedAttributes;';
+
+        $classAttributes = [];
+
+        foreach ($metadata->getAttributesMetadata() as $attribute) {
+            $classAttributes[$attribute->getName()] = $attribute;
+        }
+
+        foreach ($constructor->getParameters() as $parameter) {
+            $attribute = $classAttributes[$parameter->getName()] ?? null;
+
+            if (null === $attribute || $attribute->isIgnored()) {
+                // todo what to do here?
+                continue;
+            }
+
+            $serializedName = $attribute->getSerializedName() ?? $attribute->getName();
+            $types = $this->propertyInfo->getTypes($metadata->getReflectionClass()->getName(), $parameter->getName());
+
+            if (empty($types)) {
+                // todo what to do here?
+                continue;
+            }
+
+            $type = $types[0];
+
+            $propertyCode = sprintf("\$args['%s'] = \$data['%s']", $parameter->getName(), $serializedName);
+
+            $needsDenormalization = false;
+            $dataType = null;
+            if ($type->getBuiltinType() === Type::BUILTIN_TYPE_OBJECT) {
+                $needsDenormalization = true;
+                $dataType = $type->getClassName();
+            } elseif (!empty($type->getCollectionValueTypes())) {
+                $needsDenormalization = true;
+                $collectionType = $type->getCollectionValueTypes()[0];
+                $dataType = ($collectionType->getClassName() ?? $collectionType->getBuiltinType()) . '[]';
+            }
+
+            if ($needsDenormalization) {
+                $propertyCode = sprintf("\$args['%s'] = \$this->serializer->denormalize(\$data['%s'], '%s', \$format, \$context)", $parameter->getName(), $serializedName, $dataType);
+            }
+
+            $propertyCode = <<<STRING
+if (isset(\$allowedAttributes['$parameter->name']) && array_key_exists('$serializedName', \$data)) {
+    $propertyCode;
+}
+STRING;
+            $bodyLines[] = $propertyCode;
+            $params[] = sprintf("\$args['%s']", $parameter->getName());
+        }
+
+        $bodyLines[] = sprintf('return new \%s(%s);', $metadata->getName(), join(', ', $params));
+
+        $newInstanceMethod->setBody(join(PHP_EOL, $bodyLines));
     }
 
     private function getCastString(?string $scalarType): string

@@ -16,6 +16,8 @@ use Symfony\Component\Serializer\Normalizer\UidNormalizer;
 use Symfony\Component\Serializer\Serializer;
 use Tsantos\Symfony\Serializer\Normalizer\GeneratedNormalizer;
 use Tsantos\Symfony\Serializer\Normalizer\NormalizerGenerator;
+use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithComplexAttributeInConstructor;
+use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithConstructor;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\Php80WithoutAccessors;
 
 final class DenormalizeTest extends TestCase
@@ -93,5 +95,18 @@ final class DenormalizeTest extends TestCase
         $this->assertSame('foo', $result->string);
         $this->assertSame(10, $result->int);
         $this->assertNull($result->ignored);
+    }
+
+    public function testDenormalizeWithWithAttributesOnConstructor(): void
+    {
+        $data = [
+            'foo' => ['foo' => 'bar'],
+        ];
+
+        $result = $this->serializer->denormalize($data, DummyWithComplexAttributeInConstructor::class);
+
+        $this->assertInstanceOf(DummyWithComplexAttributeInConstructor::class, $result);
+        $this->assertInstanceOf(DummyWithConstructor::class, $result->foo);
+        $this->assertSame('bar', $result->foo->foo);
     }
 }
