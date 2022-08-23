@@ -145,9 +145,10 @@ final class NormalizerGenerator
                 continue;
             }
 
-            $getter = CodeGenerator::isReadable($metadata->getReflectionClass(), $property->getName())
-                ? sprintf(CodeGenerator::generateGetter($metadata->getReflectionClass(), $property->getName()), '$object')
-                : sprintf(CodeGenerator::generateGetterByRefl($property->getName()), 'self::$refClass', '$object');
+            $getter = CodeGenerator::generateGetter($metadata->getReflectionClass(), $property->getName(), [
+                ':object' => '$object',
+                ':refClass' => 'self::$refClass'
+            ]);
 
             $types = (array) $this->propertyInfo->getTypes($metadata->name, $property->name);
 
@@ -198,7 +199,12 @@ STRING
                 continue;
             }
             $serializedName = $property->getSerializedName() ?? $property->getName();
-            $setter = CodeGenerator::generateSetter($metadata->getReflectionClass(), $property->getName());
+
+            $setter = CodeGenerator::generateSetter($metadata->getReflectionClass(), $property->getName(), [
+                ':object' => '$object',
+                ':refClass' => 'self::$refClass',
+            ]);
+
             $rawData = $denormalizedValue = sprintf('$data[\'%s\']', $serializedName);
             $nullable = true;
             $dataType = null;
@@ -224,7 +230,7 @@ STRING
                 }
             }
 
-            $propertyCode = sprintf($setter . ';', '$object', $denormalizedValue);
+            $propertyCode = strtr($setter . ';', [':value' => $denormalizedValue]);
             $propertyCode = CodeGenerator::wrapIf("isset(\$allowedAttributes['$property->name']) && array_key_exists('$serializedName', \$data)", $propertyCode);
 
             $bodyLines[] = $propertyCode;

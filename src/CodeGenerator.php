@@ -42,13 +42,21 @@ final class CodeGenerator
         return null;
     }
 
-    public static function generateSetter(\ReflectionClass $refClass, string $property): string
+    public static function generateSetter(\ReflectionClass $refClass, string $property, array $replacements = [], bool $allowRefl = true): ?string
     {
         if (null !== $method = self::getSetterMethodName($refClass, $property)) {
-            return '%s->' . $method . '(%s)';
+            return strtr(':object->' . $method . '(:value)', $replacements);
         }
 
-        return '%s->'.$property . ' = %s';
+        if (self::isWritable($refClass, $property)) {
+            return strtr(':object->' . $property . ' = :value', $replacements);
+        }
+
+        if ($allowRefl) {
+            return strtr(':refClass->getProperty(\'' . $property . '\')->setValue(:object, :value)', $replacements);
+        }
+
+        return null;
     }
 
     public static function getGetterMethodName(\ReflectionClass $refClass, string $property): ?string
@@ -63,18 +71,21 @@ final class CodeGenerator
         return null;
     }
 
-    public static function generateGetter(\ReflectionClass $refClass, string $property): string
+    public static function generateGetter(\ReflectionClass $refClass, string $property, array $replacements = [], bool $allowRef = true): ?string
     {
         if (null !== $method = self::getGetterMethodName($refClass, $property)) {
-            return '%s->' . $method . '()';
+            return strtr(':object->' . $method . '()', $replacements);
         }
 
-        return '%s->'.$property;
-    }
+        if (self::isReadable($refClass, $property)) {
+            return strtr(':object->' . $property, $replacements);
+        }
 
-    public static function generateGetterByRefl(string $property): string
-    {
-        return '%s->getProperty(\'' . $property . '\')->getValue(%s)';
+        if ($allowRef) {
+            return strtr(':refClass->getProperty(\'' . $property . '\')->getValue(:object)', $replacements);
+        }
+
+        return null;
     }
 
     public static function wrapIf(string $condition, string $blockTrue, ?string $elseBlock = null): string

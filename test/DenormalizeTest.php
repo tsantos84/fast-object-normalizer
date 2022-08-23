@@ -18,6 +18,7 @@ use Tsantos\Symfony\Serializer\Normalizer\GeneratedNormalizer;
 use Tsantos\Symfony\Serializer\Normalizer\NormalizerGenerator;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithComplexAttributeInConstructor;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithConstructor;
+use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithPrivateAttribute;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\Php80WithoutAccessors;
 
 final class DenormalizeTest extends TestCase
@@ -61,6 +62,22 @@ final class DenormalizeTest extends TestCase
         $this->assertCount(2, $result->objectCollection);
         $this->assertSame('bar', $result->objectCollection[0]->foo);
         $this->assertSame('baz', $result->objectCollection[1]->foo);
+    }
+
+    public function testDenormalizePrivateAttributes(): void
+    {
+        $data = [
+            'private' => 'private',
+            'public' => 'public'
+        ];
+
+        $result = $this->serializer->denormalize($data, DummyWithPrivateAttribute::class);
+        $this->assertInstanceOf(DummyWithPrivateAttribute::class, $result);
+
+        $ref = new \ReflectionObject($result);
+
+        $this->assertSame('private', $ref->getProperty('private')->getValue($result));
+        $this->assertSame('public', $result->public);
     }
 
     public function testDenormalizeWithGroups(): void
