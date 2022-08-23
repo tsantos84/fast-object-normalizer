@@ -19,6 +19,7 @@ use Symfony\Component\Serializer\Serializer;
 use Tsantos\Symfony\Serializer\Normalizer\GeneratedNormalizer;
 use Tsantos\Symfony\Serializer\Normalizer\NormalizerGenerator;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithConstructor;
+use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithPrivateAttribute;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\Php80WithoutAccessors;
 
 class NormalizeTest extends TestCase
@@ -50,6 +51,14 @@ class NormalizeTest extends TestCase
         $this->assertSame(['foo' => 'bar'], $result['array']);
         $this->assertSame([['foo' => 'bar1']], $result['objectCollection']);
         $this->assertSame([1, 2, 3], $result['intCollection']);
+    }
+
+    public function testNormalizePrivateAttributes(): void
+    {
+        $subject = new DummyWithPrivateAttribute('private', 'public');
+        $result = $this->serializer->normalize($subject);
+        $this->assertSame('private', $result['private']);
+        $this->assertSame('public', $result['public']);
     }
 
     public function testNormalizeWithGroup(): void
