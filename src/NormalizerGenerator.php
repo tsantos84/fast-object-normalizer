@@ -267,6 +267,7 @@ STRING
 
         if ((null === $constructor = $metadata->getReflectionClass()->getConstructor()) || $constructor->getNumberOfParameters() === 0) {
             $newInstanceMethod->setBody(sprintf('return new \%s();', $metadata->getName()));
+            return;
         }
 
         $params = [];

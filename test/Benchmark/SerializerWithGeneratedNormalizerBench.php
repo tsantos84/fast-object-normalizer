@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Tsantos\Test\Symfony\Serializer\Normalizer\Benchmark;
 
+use Doctrine\Common\Annotations\AnnotationReader;
 use PhpBench\Attributes\Groups;
 use PhpBench\Attributes\ParamProviders;
 use PhpBench\Attributes\Warmup;
+use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactory;
+use Symfony\Component\Serializer\Mapping\Loader\AnnotationLoader;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
 use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 use Symfony\Component\Serializer\Normalizer\DateTimeZoneNormalizer;
@@ -23,7 +26,10 @@ final class SerializerWithGeneratedNormalizerBench extends AbstractBench
             new UidNormalizer(),
             new DateTimeZoneNormalizer(),
             new ArrayDenormalizer(),
-            new GeneratedNormalizer(new NormalizerGenerator(__DIR__ . '/../var'))
+            new GeneratedNormalizer(
+                generator: new NormalizerGenerator(outputDir: __DIR__ . '/../var', overwrite: false),
+                classMetadataFactory: new ClassMetadataFactory(new AnnotationLoader(new AnnotationReader()))
+            )
         ];
     }
 }
