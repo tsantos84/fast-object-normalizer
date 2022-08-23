@@ -69,6 +69,9 @@ final class NormalizerGenerator
 
         $class = new ClassType($className);
         $class
+            ->addImplement(NormalizerInterface::class)
+            ->addImplement(DenormalizerInterface::class)
+            ->addImplement(ObjectFactoryInterface::class)
             ->addComment('Auto-generated class! Do not change it by yourself.');
 
         $this->buildAllowedAttributes($class, $metadata);
@@ -79,8 +82,13 @@ final class NormalizerGenerator
             ->setPrivate()
             ->setReadOnly();
 
-        $this->buildNormalizeMethods($class, $metadata);
-        $this->buildDenormalizeMethods($class, $metadata);
+        $this->buildNormalizeMethod($class, $metadata);
+        $this->buildSupportsNormalizationMethod($class, $metadata);
+
+        $this->buildDenormalizeMethod($class, $metadata);
+        $this->buildSupportsDenormalizationMethod($class, $metadata);
+
+        $this->buildNewInstanceMethod($class, $metadata);
 
         $namespace = new PhpNamespace($this->namespace);
         $namespace->add($class);
@@ -113,9 +121,8 @@ final class NormalizerGenerator
             ->setPrivate();
     }
 
-    private function buildNormalizeMethods(ClassType $class, ClassMetadataInterface $metadata): void
+    private function buildNormalizeMethod(ClassType $class, ClassMetadataInterface $metadata): void
     {
-        $class->addImplement(NormalizerInterface::class);
         $normalizeMethod = $class->addMethod('normalize');
         $normalizeMethod->addParameter('object')->setType('mixed');
         $normalizeMethod->addParameter('format', null)->setType('string');
@@ -128,7 +135,6 @@ final class NormalizerGenerator
                 continue;
             }
             $methodSuffix = ucfirst($property->name);
-            $serializedName = $property->getSerializedName() ?? $property->getName();
             $accessor = match (true) {
                 $metadata->getReflectionClass()->hasMethod('get' . $methodSuffix) => '$object->get' . $methodSuffix,
                 $metadata->getReflectionClass()->hasMethod('is' . $methodSuffix) => '$object->is' . $methodSuffix,
@@ -162,7 +168,10 @@ $code
 return \$data;
 CODE
         );
+    }
 
+    private function buildSupportsNormalizationMethod(ClassType $class, ClassMetadataInterface $metadata): void
+    {
         $supportsNormalizeMethod = $class->addMethod('supportsNormalization');
         $supportsNormalizeMethod->addParameter('data')->setType('mixed');
         $supportsNormalizeMethod->addParameter('format', null)->setType('string');
@@ -172,12 +181,8 @@ STRING
         );
     }
 
-    private function buildDenormalizeMethods(ClassType $class, ClassMetadataInterface $metadata): void
+    private function buildDenormalizeMethod(ClassType $class, ClassMetadataInterface $metadata): void
     {
-        $class
-            ->addImplement(DenormalizerInterface::class)
-            ->addImplement(ObjectFactoryInterface::class);
-
         $denormalize = $class->addMethod('denormalize');
         $denormalize->addParameter('data')->setType('mixed');
         $denormalize->addParameter('type')->setType('string');
@@ -238,7 +243,10 @@ STRING;
         $bodyLines[] = 'return $object;';
 
         $denormalize->setBody(join(PHP_EOL, $bodyLines));
+    }
 
+    private function buildSupportsDenormalizationMethod(ClassType $class, ClassMetadataInterface $metadata): void
+    {
         $supportsNormalizeMethod = $class->addMethod('supportsDenormalization');
         $supportsNormalizeMethod->addParameter('data')->setType('mixed');
         $supportsNormalizeMethod->addParameter('type')->setType('string');
@@ -247,7 +255,10 @@ STRING;
 return \$type === '\\$metadata->name';
 STRING
         );
+    }
 
+    private function buildNewInstanceMethod(ClassType $class, ClassMetadataInterface $metadata): void
+    {
         $newInstanceMethod = $class->addMethod('newInstance')->setReturnType('object');
         $newInstanceMethod->addParameter('data', [])->setType('array');
         $newInstanceMethod->addParameter('context', [])->setType('array');
