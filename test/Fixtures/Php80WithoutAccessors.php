@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures;
 
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Annotation\Ignore;
 
 class Php80WithoutAccessors
 {
@@ -27,4 +28,7 @@ class Php80WithoutAccessors
     public array $intCollection;
 
     public ?int $nullable = null;
+
+    #[Ignore]
+    public ?string $ignored = null;
 }

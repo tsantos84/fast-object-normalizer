@@ -65,6 +65,13 @@ class NormalizeTest extends TestCase
         $this->assertArrayNotHasKey('stringWithDocBlock', $result);
     }
 
+    public function testNormalizeWithIgnoreAttribute(): void
+    {
+        $subject = $this->createDummyObject();
+        $result = $this->serializer->normalize($subject, );
+        $this->assertArrayNotHasKey('ignored', $result);
+    }
+
     public function testNormalizeCircularReference(): void
     {
         $this->expectException(CircularReferenceException::class);
@@ -83,6 +90,7 @@ class NormalizeTest extends TestCase
         $object->array = ['foo' => 'bar'];
         $object->intCollection = [1, 2, 3];
         $object->objectCollection = [new DummyWithConstructor('bar1')];
+        $object->ignored = 'ignored';
 
         return $object;
     }
