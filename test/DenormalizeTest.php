@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Tsantos\Test\Symfony\Serializer\Normalizer;
 
+use Doctrine\Common\Annotations\AnnotationReader;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
+use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactory;
+use Symfony\Component\Serializer\Mapping\Loader\AnnotationLoader;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
 use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 use Symfony\Component\Serializer\Normalizer\DateTimeZoneNormalizer;
@@ -26,7 +29,10 @@ final class DenormalizeTest extends TestCase
             new UidNormalizer(),
             new DateTimeZoneNormalizer(),
             new ArrayDenormalizer(),
-            new GeneratedNormalizer(new NormalizerGenerator(__DIR__ . '/var'))
+            new GeneratedNormalizer(
+                generator: new NormalizerGenerator(outputDir: __DIR__ . '/var', overwrite: true),
+                classMetadataFactory: new ClassMetadataFactory(new AnnotationLoader(new AnnotationReader()))
+            )
         ], ['json' => new JsonEncoder()]);
     }
 
