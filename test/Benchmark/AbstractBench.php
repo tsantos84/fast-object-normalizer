@@ -18,6 +18,7 @@ use Symfony\Component\Serializer\Serializer;
 use Tsantos\Symfony\Serializer\Normalizer\GeneratedNormalizer;
 use Tsantos\Symfony\Serializer\Normalizer\NormalizerGenerator;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithConstructor;
+use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\Php80WithAccessors;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\Php80WithoutAccessors;
 
 abstract class AbstractBench
@@ -54,14 +55,14 @@ abstract class AbstractBench
     #[ParamProviders('generateNormalizedData')]
     public function benchDenormalize(array $data): void
     {
-        $this->serializer->denormalize($data, Php80WithoutAccessors::class);
+        $this->serializer->denormalize($data, Php80WithAccessors::class);
     }
 
     public function generateObjects(): array
     {
         $data = [];
         for ($i = 1; $i <= 1000; $i++) {
-            $data[] = $subject = new Php80WithoutAccessors();
+            $data[] = $subject = new Php80WithAccessors();
             $subject->string = 'foo1';
             $subject->stringWithDocBlock = 'foo2';
             $subject->float = 1.1;

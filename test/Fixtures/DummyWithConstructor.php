@@ -11,4 +11,14 @@ final class DummyWithConstructor
     )
     {
     }
+
+    public function getFoo(): string
+    {
+        return $this->foo;
+    }
+
+    public function setFoo(string $foo): void
+    {
+        $this->foo = $foo;
+    }
 }

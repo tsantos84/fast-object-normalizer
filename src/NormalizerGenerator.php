@@ -137,8 +137,8 @@ final class NormalizerGenerator
             }
             $methodSuffix = ucfirst($property->name);
             $accessor = match (true) {
-                $metadata->getReflectionClass()->hasMethod('get' . $methodSuffix) => '$object->get' . $methodSuffix,
-                $metadata->getReflectionClass()->hasMethod('is' . $methodSuffix) => '$object->is' . $methodSuffix,
+                $metadata->getReflectionClass()->hasMethod('get' . $methodSuffix) => '$object->get' . $methodSuffix . '()',
+                $metadata->getReflectionClass()->hasMethod('is' . $methodSuffix) => '$object->is' . $methodSuffix . '()',
                 default => '$object->' . $property->name,
             };
 
@@ -201,9 +201,9 @@ STRING
             $serializedName = $property->getSerializedName() ?? $property->getName();
             $methodSuffix = ucfirst($property->name);
             $writer = match (true) {
-                $metadata->getReflectionClass()->hasMethod('set' . $methodSuffix) => 'set' . $methodSuffix,
-                $metadata->getReflectionClass()->hasMethod('with' . $methodSuffix) => 'with' . $methodSuffix,
-                default => $property->name,
+                $metadata->getReflectionClass()->hasMethod('set' . $methodSuffix) => '$object->set' . $methodSuffix . ('%s'),
+                $metadata->getReflectionClass()->hasMethod('with' . $methodSuffix) => '$object->with' . $methodSuffix . ('%s'),
+                default => '$object->' . $property->name . ' = %s',
             };
             $rawData = $denormalizedValue = sprintf('$data[\'%s\']', $serializedName);
             $nullable = true;
@@ -230,7 +230,7 @@ STRING
                 }
             }
 
-            $propertyCode = sprintf("\$object->%s = %s%s", $writer, $this->getCastString($dataType), $denormalizedValue);
+            $propertyCode = sprintf($writer, $denormalizedValue);
 
             $propertyCode = <<<STRING
 if (isset(\$allowedAttributes['{$property->name}']) && array_key_exists('$serializedName', \$data)) {
