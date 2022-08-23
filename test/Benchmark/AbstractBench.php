@@ -4,22 +4,14 @@ declare(strict_types=1);
 
 namespace Tsantos\Test\Symfony\Serializer\Normalizer\Benchmark;
 
-use PhpBench\Attributes\Groups;
 use PhpBench\Attributes\Iterations;
 use PhpBench\Attributes\ParamProviders;
-use PhpBench\Attributes\Revs;
 use PhpBench\Attributes\Warmup;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
-use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
-use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
-use Symfony\Component\Serializer\Normalizer\DateTimeZoneNormalizer;
-use Symfony\Component\Serializer\Normalizer\UidNormalizer;
 use Symfony\Component\Serializer\Serializer;
-use Tsantos\Symfony\Serializer\Normalizer\GeneratedNormalizer;
-use Tsantos\Symfony\Serializer\Normalizer\NormalizerGenerator;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithConstructor;
+use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithPrivateAttribute;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\Php80WithAccessors;
-use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\Php80WithoutAccessors;
 
 abstract class AbstractBench
 {
@@ -56,6 +48,14 @@ abstract class AbstractBench
     public function benchDenormalize(array $data): void
     {
         $this->serializer->denormalize($data, Php80WithAccessors::class);
+    }
+
+    #[Iterations(5)]
+    #[Warmup(1)]
+    #[ParamProviders('generateDenormalizedDataWithPrivateProperties')]
+    public function benchNormalizePrivateProperties(array $data): void
+    {
+        $this->serializer->normalize($data, 'json');
     }
 
     public function generateObjects(): array
@@ -95,6 +95,18 @@ abstract class AbstractBench
                     ['foo' => 'bar1'],
                 ]
             ];
+        }
+
+        return [
+            'all' => $data
+        ];
+    }
+
+    public function generateDenormalizedDataWithPrivateProperties(): array
+    {
+        $data = [];
+        for ($i = 1; $i <= 1000; $i++) {
+            $data[] = new DummyWithPrivateAttribute('private', 'public');
         }
 
         return [

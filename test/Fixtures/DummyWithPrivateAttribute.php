@@ -12,4 +12,14 @@ final class DummyWithPrivateAttribute
     )
     {
     }
+
+    public function getPublic(): string
+    {
+        return $this->public;
+    }
+
+    public function setPublic(string $public): void
+    {
+        $this->public = $public;
+    }
 }
