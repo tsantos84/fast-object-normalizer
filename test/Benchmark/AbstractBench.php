@@ -31,13 +31,30 @@ abstract class AbstractBench
 
     abstract function getNormalizers(): array;
 
-    #[Revs(1)]
     #[Iterations(5)]
     #[Warmup(1)]
     #[ParamProviders('generateObjects')]
     public function benchNormalize(array $data): void
     {
         $this->serializer->normalize($data);
+    }
+
+    #[Iterations(5)]
+    #[Warmup(1)]
+    #[ParamProviders('generateObjects')]
+    public function benchNormalizeWithGroups(array $data): void
+    {
+        $this->serializer->normalize($data, 'json', [
+            'groups' => ['foo-group']
+        ]);
+    }
+
+    #[Iterations(5)]
+    #[Warmup(1)]
+    #[ParamProviders('generateNormalizedData')]
+    public function benchDenormalize(array $data): void
+    {
+        $this->serializer->denormalize($data, Php80WithoutAccessors::class);
     }
 
     public function generateObjects(): array
@@ -51,8 +68,32 @@ abstract class AbstractBench
             $subject->int = 1;
             $subject->array = ['foo' => 'bar'];
             $subject->intCollection = [1, 2, 3];
-            $subject->nested = new DummyWithConstructor('foo');
             $subject->objectCollection = [new DummyWithConstructor('bar1')];
+        }
+
+        return [
+            'all' => $data
+        ];
+    }
+
+    public function generateNormalizedData(): array
+    {
+        $data = [];
+        for ($i = 1; $i <= 1000; $i++) {
+            $data[] = [
+                'string' => 'foo1',
+                'stringWithDocBlock' => 'foo2',
+                'float' => 1.1,
+                'int' => 1,
+                'array' => ['foo' => 'bar'],
+                'intCollection' => [1,2,3,4],
+                'objectCollection' => [
+                    ['foo' => 'bar1'],
+                    ['foo' => 'bar1'],
+                    ['foo' => 'bar1'],
+                    ['foo' => 'bar1'],
+                ]
+            ];
         }
 
         return [
