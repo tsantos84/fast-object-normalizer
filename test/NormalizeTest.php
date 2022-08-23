@@ -65,6 +65,19 @@ class NormalizeTest extends TestCase
         $this->assertArrayNotHasKey('stringWithDocBlock', $result);
     }
 
+    public function testNormalizeProvidingAttributesInContext(): void
+    {
+        $subject = $this->createDummyObject();
+
+        $result = $this->serializer->normalize($subject, 'json', [
+            AbstractNormalizer::ATTRIBUTES => ['string', 'int']
+        ]);
+
+        $this->assertSame('foo1', $result['string']);
+        $this->assertSame(1, $result['int']);
+        $this->assertArrayNotHasKey('stringWithDocBlock', $result);
+    }
+
     public function testNormalizeWithIgnoreAttribute(): void
     {
         $subject = $this->createDummyObject();
