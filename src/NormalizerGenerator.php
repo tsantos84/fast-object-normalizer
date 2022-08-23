@@ -220,23 +220,15 @@ STRING
             if ($needsDenormalization) {
                 $denormalizedValue = sprintf('$this->serializer->denormalize(%s, \'%s\', $format, $context)', $rawData, $dataType);
                 if ($nullable) {
-                    $denormalizedValue = sprintf('isset(%s) ? %s : null;', $rawData, $denormalizedValue);
+                    $denormalizedValue = sprintf('isset(%s) ? %s : null', $rawData, $denormalizedValue);
                 }
             }
 
-            $propertyCode = sprintf("\$object->%s = %s%s;", $writer, $this->getCastString($dataType), $denormalizedValue);
-
-            if (!$nullable) {
-                $propertyCode = <<<STRING
-if (isset($rawData)) {
-        $propertyCode;
-    }
-STRING;
-            }
+            $propertyCode = sprintf("\$object->%s = %s%s", $writer, $this->getCastString($dataType), $denormalizedValue);
 
             $propertyCode = <<<STRING
-if (isset(\$allowedAttributes['$serializedName'])) {
-    $propertyCode
+if (isset(\$allowedAttributes['$serializedName']) && array_key_exists('$serializedName', \$data)) {
+    $propertyCode;
 }
 STRING;
 

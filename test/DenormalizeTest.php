@@ -78,4 +78,20 @@ final class DenormalizeTest extends TestCase
         $this->assertSame(10, $result->int);
         $this->assertNull($result->nullable);
     }
+
+    public function testDenormalizeWithIgnoredAttribute(): void
+    {
+        $data = [
+            'string' => 'foo',
+            'int' => 10,
+            'ignored' => 'ignored'
+        ];
+
+        $result = $this->serializer->denormalize($data, Php80WithoutAccessors::class);
+
+        $this->assertInstanceOf(Php80WithoutAccessors::class, $result);
+        $this->assertSame('foo', $result->string);
+        $this->assertSame(10, $result->int);
+        $this->assertNull($result->ignored);
+    }
 }
