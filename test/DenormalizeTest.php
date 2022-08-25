@@ -35,9 +35,6 @@ final class DenormalizeTest extends TestCase
         $discriminator = new ClassDiscriminatorFromClassMetadata($classMetadataFactory);
 
         $this->serializer = new Serializer([
-            new DateTimeNormalizer(),
-            new UidNormalizer(),
-            new DateTimeZoneNormalizer(),
             new ArrayDenormalizer(),
             new SuperFastObjectNormalizer(
                 classGenerator: new NormalizerClassGenerator($classMetadataFactory, $discriminator),

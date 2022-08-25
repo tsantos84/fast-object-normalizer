@@ -20,9 +20,7 @@ use Symfony\Component\Serializer\Serializer;
 use Tsantos\Symfony\Serializer\Normalizer\SuperFastObjectNormalizer;
 use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassGenerator;
 use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassPersister;
-use Tsantos\Symfony\Serializer\Normalizer\NormalizerLoader;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyA;
-use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyInterface;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithConstructor;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithPrivateAttribute;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\Php80WithoutAccessors;
@@ -37,9 +35,6 @@ class NormalizeTest extends TestCase
         $discriminator = new ClassDiscriminatorFromClassMetadata($classMetadataFactory);
 
         $this->serializer = new Serializer([
-            new DateTimeNormalizer(),
-            new UidNormalizer(),
-            new DateTimeZoneNormalizer(),
             new ArrayDenormalizer(),
             new SuperFastObjectNormalizer(
                 classGenerator: new NormalizerClassGenerator($classMetadataFactory, $discriminator),
