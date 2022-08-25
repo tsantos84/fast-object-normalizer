@@ -17,9 +17,12 @@ use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 use Symfony\Component\Serializer\Normalizer\DateTimeZoneNormalizer;
 use Symfony\Component\Serializer\Normalizer\UidNormalizer;
 use Symfony\Component\Serializer\Serializer;
-use Tsantos\Symfony\Serializer\Normalizer\GeneratedNormalizer;
-use Tsantos\Symfony\Serializer\Normalizer\NormalizerGenerator;
+use Tsantos\Symfony\Serializer\Normalizer\SuperFastObjectNormalizer;
+use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassGenerator;
+use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassPersister;
+use Tsantos\Symfony\Serializer\Normalizer\NormalizerLoader;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyA;
+use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyInterface;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithConstructor;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithPrivateAttribute;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\Php80WithoutAccessors;
@@ -32,15 +35,16 @@ class NormalizeTest extends TestCase
     {
         $classMetadataFactory = new ClassMetadataFactory(new AnnotationLoader(new AnnotationReader()));
         $discriminator = new ClassDiscriminatorFromClassMetadata($classMetadataFactory);
+
         $this->serializer = new Serializer([
             new DateTimeNormalizer(),
             new UidNormalizer(),
             new DateTimeZoneNormalizer(),
             new ArrayDenormalizer(),
-            new GeneratedNormalizer(
-                generator: new NormalizerGenerator(outputDir: __DIR__ . '/var', overwrite: true),
+            new SuperFastObjectNormalizer(
+                classGenerator: new NormalizerClassGenerator($classMetadataFactory, $discriminator),
+                classPersister: new NormalizerClassPersister(__DIR__ . '/var'),
                 classMetadataFactory: $classMetadataFactory,
-                discriminatorResolver: $discriminator
             )
         ], ['json' => new JsonEncoder()]);
     }
@@ -120,7 +124,7 @@ class NormalizeTest extends TestCase
         $subject = new DummyA();
         $result = $this->serializer->normalize($subject);
         $this->assertArrayHasKey('type', $result);
-        $this->assertSame('dummyA   ', $result['type']);
+        $this->assertSame('dummyA', $result['type']);
     }
 
     private function createDummyObject(): Php80WithoutAccessors

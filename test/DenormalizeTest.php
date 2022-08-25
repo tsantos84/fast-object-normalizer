@@ -7,6 +7,7 @@ namespace Tsantos\Test\Symfony\Serializer\Normalizer;
 use Doctrine\Common\Annotations\AnnotationReader;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
+use Symfony\Component\Serializer\Mapping\ClassDiscriminatorFromClassMetadata;
 use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactory;
 use Symfony\Component\Serializer\Mapping\Loader\AnnotationLoader;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
@@ -14,8 +15,11 @@ use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 use Symfony\Component\Serializer\Normalizer\DateTimeZoneNormalizer;
 use Symfony\Component\Serializer\Normalizer\UidNormalizer;
 use Symfony\Component\Serializer\Serializer;
-use Tsantos\Symfony\Serializer\Normalizer\GeneratedNormalizer;
-use Tsantos\Symfony\Serializer\Normalizer\NormalizerGenerator;
+use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassPersister;
+use Tsantos\Symfony\Serializer\Normalizer\SuperFastObjectNormalizer;
+use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassGenerator;
+use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyA;
+use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyInterface;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithComplexAttributeInConstructor;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithConstructor;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithPrivateAttribute;
@@ -27,14 +31,18 @@ final class DenormalizeTest extends TestCase
 
     protected function setUp(): void
     {
+        $classMetadataFactory = new ClassMetadataFactory(new AnnotationLoader(new AnnotationReader()));
+        $discriminator = new ClassDiscriminatorFromClassMetadata($classMetadataFactory);
+
         $this->serializer = new Serializer([
             new DateTimeNormalizer(),
             new UidNormalizer(),
             new DateTimeZoneNormalizer(),
             new ArrayDenormalizer(),
-            new GeneratedNormalizer(
-                generator: new NormalizerGenerator(outputDir: __DIR__ . '/var', overwrite: true),
-                classMetadataFactory: new ClassMetadataFactory(new AnnotationLoader(new AnnotationReader()))
+            new SuperFastObjectNormalizer(
+                classGenerator: new NormalizerClassGenerator($classMetadataFactory, $discriminator),
+                classPersister: new NormalizerClassPersister(__DIR__ . '/var'),
+                classMetadataFactory: $classMetadataFactory,
             )
         ], ['json' => new JsonEncoder()]);
     }
@@ -78,6 +86,13 @@ final class DenormalizeTest extends TestCase
 
         $this->assertSame('private', $ref->getProperty('private')->getValue($result));
         $this->assertSame('public', $result->public);
+    }
+
+    public function testDenormalizeWithDiscriminator(): void
+    {
+        $data = ['type' => 'dummyA'];
+        $result = $this->serializer->denormalize($data, DummyInterface::class);
+        $this->assertInstanceOf(DummyA::class, $result);
     }
 
     public function testDenormalizeWithGroups(): void
