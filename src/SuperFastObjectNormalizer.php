@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tsantos\Symfony\Serializer\Normalizer;
 
+use PhpBench\Reflection\ReflectionClass;
 use Symfony\Component\Serializer\Mapping\ClassDiscriminatorResolverInterface;
 use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactoryInterface;
 use Symfony\Component\Serializer\NameConverter\NameConverterInterface;
@@ -13,9 +14,11 @@ use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Serializer\SerializerAwareInterface;
 use Symfony\Component\Serializer\SerializerAwareTrait;
 
-final class GeneratedNormalizer extends AbstractNormalizer implements NormalizerInterface, DenormalizerInterface, SerializerAwareInterface
+final class SuperFastObjectNormalizer extends AbstractNormalizer implements NormalizerInterface, DenormalizerInterface, SerializerAwareInterface
 {
     use SerializerAwareTrait;
+
+    private array $loaded = [];
 
     private const SCALAR_TYPES = [
         'int' => true,
@@ -24,14 +27,12 @@ final class GeneratedNormalizer extends AbstractNormalizer implements Normalizer
         'string' => true,
     ];
 
-    private static array $loaded = [];
-
     public function __construct(
-        private readonly NormalizerGenerator $generator,
-        ClassMetadataFactoryInterface $classMetadataFactory = null,
-        NameConverterInterface $nameConverter = null,
-        private ?ClassDiscriminatorResolverInterface $discriminatorResolver = null,
-        array $defaultContext = []
+        private readonly NormalizerClassGenerator                     $classGenerator,
+        private readonly NormalizerClassPersister                     $classPersister,
+        ClassMetadataFactoryInterface                         $classMetadataFactory = null,
+        NameConverterInterface                                $nameConverter = null,
+        array                                                 $defaultContext = []
     )
     {
         parent::__construct($classMetadataFactory, $nameConverter, $defaultContext);
@@ -39,7 +40,7 @@ final class GeneratedNormalizer extends AbstractNormalizer implements Normalizer
 
     public function denormalize(mixed $data, string $type, string $format = null, array $context = [])
     {
-        $denormalizer = $this->loadNormalizer($type);
+        $denormalizer = $this->getNormalizer($type);
 
         if (false !== $attributes = $this->getAllowedAttributes($type, $context, true)) {
             $context['allowed_attributes'][$type] = array_flip($attributes);
@@ -59,7 +60,7 @@ final class GeneratedNormalizer extends AbstractNormalizer implements Normalizer
             return $this->handleCircularReference($object, $format, $context);
         }
 
-        $normalizer = $this->loadNormalizer($object, $context);
+        $normalizer = $this->getNormalizer($object, $context);
 
         if (false !== $attributes = $this->getAllowedAttributes($object, $context, true)) {
             $context['allowed_attributes'][get_class($object)] = array_flip($attributes);
@@ -73,20 +74,18 @@ final class GeneratedNormalizer extends AbstractNormalizer implements Normalizer
         return is_object($data) && !$data instanceof \Iterator;
     }
 
-    private function loadNormalizer(string|object $classOrObject, array $context = []): NormalizerInterface & DenormalizerInterface & ObjectFactoryInterface
+    public function getNormalizer(string|object $classOrObject): NormalizerInterface & DenormalizerInterface & ObjectFactoryInterface
     {
         $class = is_object($classOrObject) ? get_class($classOrObject) : $classOrObject;
 
-        if (isset(self::$loaded[$class])) {
-            return self::$loaded[$class];
+        if (isset($this->loaded[$class])) {
+            return $this->loaded[$class];
         }
 
-        $result = $this->generator->generate($classOrObject, $this->classMetadataFactory, $this->discriminatorResolver);
+        $phpFile = $this->classGenerator->generate($class);
 
-        if (!class_exists($result['className'], false)) {
-            include_once $result['filename'];
-        }
+        $generatedClass = $this->classPersister->persist($phpFile);
 
-        return self::$loaded[$class] = new $result['className']($this->serializer);
+        return $this->loaded[$class] = new $generatedClass($this->serializer, $this);
     }
 }
