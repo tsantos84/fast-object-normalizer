@@ -12,6 +12,7 @@ use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractorInterface;
 use Symfony\Component\PropertyInfo\Type;
+use Symfony\Component\Serializer\Exception\NotNormalizableValueException;
 use Symfony\Component\Serializer\Mapping\ClassDiscriminatorResolverInterface;
 use Symfony\Component\Serializer\Mapping\ClassMetadataInterface;
 use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactoryInterface;
@@ -19,15 +20,16 @@ use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Serializer\Serializer;
+use Tsantos\Symfony\Serializer\Normalizer\Exception\MissingDiscriminatorKeyException;
+use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyA;
 
-final class NormalizerGenerator
+final class NormalizerClassGenerator
 {
     private readonly PropertyInfoExtractorInterface $propertyInfo;
 
     public function __construct(
-        readonly private string $outputDir,
-        readonly private string $namespace = 'App\\Serializer\\Normalizer',
-        readonly private bool $overwrite = false,
+        readonly private ClassMetadataFactoryInterface $metadataFactory,
+        readonly private ?ClassDiscriminatorResolverInterface $classDiscriminatorResolver = null,
     )
     {
         // a full list of extractors is shown further below
@@ -48,7 +50,7 @@ final class NormalizerGenerator
         );
     }
 
-    public function generate(object|string $target, ClassMetadataFactoryInterface $metadataFactory, ?ClassDiscriminatorResolverInterface $discriminatorResolver = null): array
+    public function generate(object|string $target, ?string $namespace = null): PhpFile
     {
         if (is_object($target)) {
             $target = get_class($target);
@@ -57,42 +59,34 @@ final class NormalizerGenerator
         $ref = new \ReflectionClass($target);
 
         $className = 'Generated' . $ref->getShortName() . 'Normalizer';
-        $filename = ($this->outputDir . '/' . $className . '.php');
 
-        if (file_exists($filename) && !$this->overwrite) {
-            return [
-                'className' => $this->namespace . '\\' . $className,
-                'filename' => $filename
-            ];
+        if (null !== $namespace) {
+            $className = $namespace . '\\' . $className;
         }
 
-        $metadata = $metadataFactory->getMetadataFor($ref->getName());
+        $metadata = $this->metadataFactory->getMetadataFor($ref->getName());
 
-        $class = new ClassType($className);
-        $class
+        $phpFile = new PhpFile();
+        $phpFile
+            ->setStrictTypes();
+
+        $class = $phpFile
+            ->addClass($className)
+            ->setFinal()
             ->addImplement(NormalizerInterface::class)
             ->addImplement(DenormalizerInterface::class)
             ->addImplement(ObjectFactoryInterface::class)
             ->addComment('Auto-generated class! Do not change it by yourself.');
 
         $class
-            ->addProperty('refClass', null)
+            ->addProperty('refClass')
             ->setType(\ReflectionClass::class)
-            ->setNullable()
-            ->setPrivate()
-            ->setStatic();
+            ->setPrivate();
 
         $this->buildAllowedAttributes($class, $metadata);
+        $this->buildConstructorMethod($class, $metadata);
 
-        $constructor = $class->addMethod('__construct');
-        $constructor->setBody(CodeGenerator::wrapIf('null === self::$refClass', 'self::$refClass = new \ReflectionClass(\''.$ref->getName().'\');'));
-        $constructor
-            ->addPromotedParameter('serializer')
-            ->setType(Serializer::class)
-            ->setPrivate()
-            ->setReadOnly();
-
-        $this->buildNormalizeMethod($class, $metadata, $discriminatorResolver);
+        $this->buildNormalizeMethod($class, $metadata);
         $this->buildSupportsNormalizationMethod($class, $metadata);
 
         $this->buildDenormalizeMethod($class, $metadata);
@@ -100,18 +94,24 @@ final class NormalizerGenerator
 
         $this->buildNewInstanceMethod($class, $metadata);
 
-        $namespace = new PhpNamespace($this->namespace);
-        $namespace->add($class);
+        return $phpFile;
+    }
 
-        $phpFile = new PhpFile();
-        $phpFile->addNamespace($namespace);
+    private function buildConstructorMethod(ClassType $class, ClassMetadataInterface $metadata): void
+    {
+        $constructor = $class->addMethod('__construct');
+        $constructor
+            ->addPromotedParameter('serializer')
+            ->setType(Serializer::class)
+            ->setPrivate()
+            ->setReadOnly();
 
-        file_put_contents($filename, (string) $phpFile);
+        $constructor->addPromotedParameter('loader')
+            ->setType(NormalizerFactory::class)
+            ->setPrivate()
+            ->setReadOnly();
 
-        return [
-            'className' => $this->namespace . '\\' . $className,
-            'filename' => $filename
-        ];
+        $constructor->setBody('$this->refClass = new \ReflectionClass(\''.$metadata->getName().'\');');
     }
 
     private function buildAllowedAttributes(ClassType $classType, ClassMetadataInterface $metadata): void
@@ -131,16 +131,9 @@ final class NormalizerGenerator
             ->setPrivate();
     }
 
-    private function buildNormalizeMethod(ClassType $class, ClassMetadataInterface $metadata, ClassDiscriminatorResolverInterface $discriminatorResolver = null): void
+    private function buildNormalizeMethod(ClassType $class, ClassMetadataInterface $metadata): void
     {
-        $discriminatorProperty = null;
-        $discriminatorValue = null;
-
-        if (null !== $discriminatorResolver) {
-            $discriminatorMapping = $discriminatorResolver->getMappingForMappedObject($metadata->getName());
-            $discriminatorProperty = $discriminatorMapping->getTypeProperty();
-            $discriminatorValue = array_search($metadata->getName(), $discriminatorMapping->getTypesMapping());
-        }
+        list($discriminatorValue, $discriminatorProperty) = $this->getDiscriminatorData($metadata);
 
         $normalizeMethod = $class->addMethod('normalize');
         $normalizeMethod->addParameter('object')->setType('mixed');
@@ -166,7 +159,7 @@ final class NormalizerGenerator
 
             $getter = CodeGenerator::generateGetter($metadata->getReflectionClass(), $property->getName(), [
                 ':object' => '$object',
-                ':refClass' => 'self::$refClass'
+                ':refClass' => '$this->refClass'
             ]);
 
             $types = (array) $this->propertyInfo->getTypes($metadata->name, $property->name);
@@ -221,7 +214,7 @@ STRING
 
             $setter = CodeGenerator::generateSetter($metadata->getReflectionClass(), $property->getName(), [
                 ':object' => '$object',
-                ':refClass' => 'self::$refClass',
+                ':refClass' => '$this->refClass',
             ]);
 
             $rawData = $denormalizedValue = sprintf('$data[\'%s\']', $serializedName);
@@ -278,6 +271,24 @@ STRING
         $newInstanceMethod->addParameter('data', [])->setType('array');
         $newInstanceMethod->addParameter('format', null)->setType('string');
         $newInstanceMethod->addParameter('context', [])->setType('array');
+
+        if (null !== $this->classDiscriminatorResolver) {
+            $mapping = $this->classDiscriminatorResolver->getMappingForClass($metadata->getName());
+            $propertyType = $mapping->getTypeProperty();
+
+            $bodyLines = [];
+            $bodyLines[] = CodeGenerator::wrapIf("!isset(\$data['".$propertyType."'])", "throw \\" . NotNormalizableValueException::class . "::createForUnexpectedDataType(sprintf('Type property \"%s\" not found for the abstract object \"%s\".', '$propertyType', '{$metadata->getName()}'), null, ['string'], isset(\$context['deserialization_path']) ? \$context['deserialization_path'].'$propertyType' : '$propertyType', false);");
+            $bodyLines[] = sprintf('$class = self::$classDiscriminator[$data["%s"]];', $propertyType);
+            $bodyLines[] = 'return $this->loader->get($class)->newInstance($data, $format, $context);';
+
+            $class->addProperty('classDiscriminator', $mapping->getTypesMapping())
+                ->setType('array')
+                ->setStatic()
+                ->setPrivate();
+
+            $newInstanceMethod->setBody(CodeGenerator::dumpCode($bodyLines));
+            return;
+        }
 
         if ((null === $constructor = $metadata->getReflectionClass()->getConstructor()) || $constructor->getNumberOfParameters() === 0) {
             $newInstanceMethod->setBody(sprintf('return new \%s();', $metadata->getName()));
@@ -336,5 +347,18 @@ STRING
         $bodyLines[] = sprintf('return new \%s(%s);', $metadata->getName(), join(', ', $params));
 
         $newInstanceMethod->setBody(CodeGenerator::dumpCode($bodyLines));
+    }
+
+    private function getDiscriminatorData(ClassMetadataInterface $metadata): array
+    {
+        if (null !== $this->classDiscriminatorResolver) {
+            $discriminatorMapping = $this->classDiscriminatorResolver->getMappingForMappedObject($metadata->getName());
+            return [
+                $discriminatorMapping->getTypeProperty(),
+                array_search($metadata->getName(), $discriminatorMapping->getTypesMapping())
+            ];
+        }
+
+        return [null, null];
     }
 }
