@@ -14,7 +14,7 @@ final class NormalizerClassPersister
     {
     }
 
-    public function persist(PhpFile $phpFile, bool $overwrite = false, bool $andLoad = true): bool
+    public function persist(PhpFile $phpFile, bool $overwrite = false, bool $andLoad = true): string
     {
         if (count($phpFile->getClasses()) === 0) {
             throw new \Exception('There is no class defined on PhpFile provided');
@@ -31,18 +31,18 @@ final class NormalizerClassPersister
 
         if (file_exists($filename) && !$overwrite) {
             if ($andLoad && !class_exists($longName, false)) {
-                return self::load($filename);
+                self::load($filename);
             }
-            return true;
+            return $longName;
         }
 
-        $write = file_put_contents($filename, (string) $phpFile);
+        file_put_contents($filename, (string) $phpFile);
 
         if ($andLoad) {
-            return self::load($filename);
+            self::load($filename);
         }
 
-        return $write !== false;
+        return $longName;
     }
 
     private static function load(string $filename): bool
