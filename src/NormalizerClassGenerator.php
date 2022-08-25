@@ -106,8 +106,8 @@ final class NormalizerClassGenerator
             ->setPrivate()
             ->setReadOnly();
 
-        $constructor->addPromotedParameter('loader')
-            ->setType(NormalizerFactory::class)
+        $constructor->addPromotedParameter('normalizer')
+            ->setType(SuperFastObjectNormalizer::class)
             ->setPrivate()
             ->setReadOnly();
 
@@ -133,7 +133,7 @@ final class NormalizerClassGenerator
 
     private function buildNormalizeMethod(ClassType $class, ClassMetadataInterface $metadata): void
     {
-        list($discriminatorValue, $discriminatorProperty) = $this->getDiscriminatorData($metadata);
+        list($discriminatorProperty, $discriminatorValue) = $this->getDiscriminatorData($metadata);
 
         $normalizeMethod = $class->addMethod('normalize');
         $normalizeMethod->addParameter('object')->setType('mixed');
@@ -272,14 +272,13 @@ STRING
         $newInstanceMethod->addParameter('format', null)->setType('string');
         $newInstanceMethod->addParameter('context', [])->setType('array');
 
-        if (null !== $this->classDiscriminatorResolver) {
-            $mapping = $this->classDiscriminatorResolver->getMappingForClass($metadata->getName());
+        if (null !== $this->classDiscriminatorResolver && null !== $mapping = $this->classDiscriminatorResolver->getMappingForClass($metadata->getName())) {
             $propertyType = $mapping->getTypeProperty();
 
             $bodyLines = [];
             $bodyLines[] = CodeGenerator::wrapIf("!isset(\$data['".$propertyType."'])", "throw \\" . NotNormalizableValueException::class . "::createForUnexpectedDataType(sprintf('Type property \"%s\" not found for the abstract object \"%s\".', '$propertyType', '{$metadata->getName()}'), null, ['string'], isset(\$context['deserialization_path']) ? \$context['deserialization_path'].'$propertyType' : '$propertyType', false);");
             $bodyLines[] = sprintf('$class = self::$classDiscriminator[$data["%s"]];', $propertyType);
-            $bodyLines[] = 'return $this->loader->get($class)->newInstance($data, $format, $context);';
+            $bodyLines[] = 'return $this->normalizer->getNormalizer($class)->newInstance($data, $format, $context);';
 
             $class->addProperty('classDiscriminator', $mapping->getTypesMapping())
                 ->setType('array')
@@ -351,11 +350,10 @@ STRING
 
     private function getDiscriminatorData(ClassMetadataInterface $metadata): array
     {
-        if (null !== $this->classDiscriminatorResolver) {
-            $discriminatorMapping = $this->classDiscriminatorResolver->getMappingForMappedObject($metadata->getName());
+        if (null !== $this->classDiscriminatorResolver && null !== $mapping = $this->classDiscriminatorResolver->getMappingForMappedObject($metadata->getName())) {
             return [
-                $discriminatorMapping->getTypeProperty(),
-                array_search($metadata->getName(), $discriminatorMapping->getTypesMapping())
+                $mapping->getTypeProperty(),
+                array_search($metadata->getName(), $mapping->getTypesMapping())
             ];
         }
 
