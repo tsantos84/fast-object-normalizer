@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/*
+ * This file is part of the Tsantos Object Normalizer package.
+ * (c) Tales Santos <tales.augusto.santos@gmail.com>
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Tsantos\Symfony\Serializer\Normalizer;
 
 use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactoryInterface;
@@ -25,12 +32,11 @@ final class FastObjectNormalizer extends AbstractNormalizer implements Normalize
 
     public function __construct(
         private readonly NormalizerClassGenerator $classGenerator,
-        private readonly NormalizerClassDumper    $classDumper,
-        ClassMetadataFactoryInterface             $classMetadataFactory = null,
-        NameConverterInterface                    $nameConverter = null,
-        array                                     $defaultContext = []
-    )
-    {
+        private readonly NormalizerClassDumper $classDumper,
+        ClassMetadataFactoryInterface $classMetadataFactory = null,
+        NameConverterInterface $nameConverter = null,
+        array $defaultContext = []
+    ) {
         parent::__construct($classMetadataFactory, $nameConverter, $defaultContext);
     }
 
@@ -43,7 +49,7 @@ final class FastObjectNormalizer extends AbstractNormalizer implements Normalize
 
     public function supportsDenormalization(mixed $data, string $type, string $format = null)
     {
-        return !array_key_exists($type, self::SCALAR_TYPES);
+        return !\array_key_exists($type, self::SCALAR_TYPES);
     }
 
     public function normalize(mixed $object, string $format = null, array $context = [])
@@ -59,12 +65,12 @@ final class FastObjectNormalizer extends AbstractNormalizer implements Normalize
 
     public function supportsNormalization(mixed $data, string $format = null)
     {
-        return is_object($data) && !$data instanceof \Iterator;
+        return \is_object($data) && !$data instanceof \Iterator;
     }
 
     public function getNormalizer(string|object $classOrObject): NormalizerInterface
     {
-        $class = is_object($classOrObject) ? get_class($classOrObject) : $classOrObject;
+        $class = \is_object($classOrObject) ? \get_class($classOrObject) : $classOrObject;
 
         if (isset($this->loaded[$class])) {
             return $this->loaded[$class];
@@ -81,7 +87,7 @@ final class FastObjectNormalizer extends AbstractNormalizer implements Normalize
 
         return $this->loaded[$class] = $config->newInstance([
             'serializer' => $this->serializer,
-            'normalizer' => $this
+            'normalizer' => $this,
         ]);
     }
 

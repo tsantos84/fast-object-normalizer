@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/*
+ * This file is part of the Tsantos Object Normalizer package.
+ * (c) Tales Santos <tales.augusto.santos@gmail.com>
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Tsantos\Symfony\Serializer\Normalizer;
 
 final class NormalizerClassConfig
@@ -14,11 +21,10 @@ final class NormalizerClassConfig
         public readonly string $subjectClassName,
         public readonly string $outputDir,
         public readonly ?string $outputNamespace = null
-    )
-    {
+    ) {
         $this->refClass = new \ReflectionClass($this->subjectClassName);
-        $this->normalizerClassShortName = 'Generated' . $this->refClass->getShortName() . 'Normalizer';
-        $this->normalizerClassName = $this->outputNamespace . '\\' . $this->normalizerClassShortName;
+        $this->normalizerClassShortName = 'Generated'.$this->refClass->getShortName().'Normalizer';
+        $this->normalizerClassName = $this->outputNamespace.'\\'.$this->normalizerClassShortName;
     }
 
     public function isLoaded(): bool
@@ -33,7 +39,7 @@ final class NormalizerClassConfig
 
     public function getFilename(): string
     {
-        return $this->outputDir . DIRECTORY_SEPARATOR . $this->normalizerClassShortName . '.php';
+        return $this->outputDir.\DIRECTORY_SEPARATOR.$this->normalizerClassShortName.'.php';
     }
 
     public function load(): void
@@ -50,6 +56,7 @@ final class NormalizerClassConfig
     public function newInstance(array $args): NormalizerInterface
     {
         $refClass = new \ReflectionClass($this->normalizerClassName);
+
         return $refClass->newInstanceArgs($args);
     }
 }

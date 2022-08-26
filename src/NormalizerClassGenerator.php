@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/*
+ * This file is part of the Tsantos Object Normalizer package.
+ * (c) Tales Santos <tales.augusto.santos@gmail.com>
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Tsantos\Symfony\Serializer\Normalizer;
 
 use Nette\PhpGenerator\ClassType;
@@ -24,8 +31,7 @@ final class NormalizerClassGenerator
     public function __construct(
         readonly private ClassMetadataFactoryInterface $metadataFactory,
         readonly private ?ClassDiscriminatorResolverInterface $classDiscriminatorResolver = null,
-    )
-    {
+    ) {
         // a full list of extractors is shown further below
         $phpDocExtractor = new PhpDocExtractor();
         $reflectionExtractor = new ReflectionExtractor();
@@ -113,7 +119,7 @@ final class NormalizerClassGenerator
 
         foreach ($metadata->getAttributesMetadata() as $property) {
             if ($property->isIgnored()) {
-                $bodyLines[] = CodeGenerator::comment('skiping property "' . $property->getName() . '" as it was ignored');
+                $bodyLines[] = CodeGenerator::comment('skiping property "'.$property->getName().'" as it was ignored');
                 continue;
             }
 
@@ -123,7 +129,7 @@ final class NormalizerClassGenerator
 
             $getter = CodeGenerator::generateGetter($metadata->getReflectionClass(), $property->getName(), [
                 ':object' => '$object',
-                ':refClass' => '$this->refClass'
+                ':refClass' => '$this->refClass',
             ]);
 
             $types = (array) $this->propertyInfo->getTypes($metadata->name, $property->name);
@@ -160,7 +166,7 @@ final class NormalizerClassGenerator
 
         foreach ($metadata->getAttributesMetadata() as $property) {
             if ($property->isIgnored()) {
-                $bodyLines[] = CodeGenerator::comment('skiping property "' . $property->getName() . '" as it was ignored');
+                $bodyLines[] = CodeGenerator::comment('skiping property "'.$property->getName().'" as it was ignored');
                 continue;
             }
             $serializedName = $property->getSerializedName() ?? $property->getName();
@@ -183,7 +189,7 @@ final class NormalizerClassGenerator
                     $needsDenormalization = true;
                 } elseif (!empty($type->getCollectionValueTypes())) {
                     $collectionType = $type->getCollectionValueTypes()[0];
-                    $dataType = ($collectionType->getClassName() ?? $collectionType->getBuiltinType()) . '[]';
+                    $dataType = ($collectionType->getClassName() ?? $collectionType->getBuiltinType()).'[]';
                     $needsDenormalization = true;
                 }
             }
@@ -195,7 +201,7 @@ final class NormalizerClassGenerator
                 }
             }
 
-            $propertyCode = strtr($setter . ';', [':value' => $denormalizedValue]);
+            $propertyCode = strtr($setter.';', [':value' => $denormalizedValue]);
             $propertyCode = CodeGenerator::wrapIf("isset(\$allowedAttributes['$property->name']) && array_key_exists('$serializedName', \$data)", $propertyCode);
 
             $bodyLines[] = $propertyCode;
@@ -217,7 +223,7 @@ final class NormalizerClassGenerator
             $propertyType = $mapping->getTypeProperty();
 
             $bodyLines = [];
-            $bodyLines[] = CodeGenerator::wrapIf("!isset(\$data['".$propertyType."'])", "throw \\" . NotNormalizableValueException::class . "::createForUnexpectedDataType(sprintf('Type property \"%s\" not found for the abstract object \"%s\".', '$propertyType', '{$metadata->getName()}'), null, ['string'], isset(\$context['deserialization_path']) ? \$context['deserialization_path'].'$propertyType' : '$propertyType', false);");
+            $bodyLines[] = CodeGenerator::wrapIf("!isset(\$data['".$propertyType."'])", 'throw \\'.NotNormalizableValueException::class."::createForUnexpectedDataType(sprintf('Type property \"%s\" not found for the abstract object \"%s\".', '$propertyType', '{$metadata->getName()}'), null, ['string'], isset(\$context['deserialization_path']) ? \$context['deserialization_path'].'$propertyType' : '$propertyType', false);");
             $bodyLines[] = sprintf('$class = self::$classDiscriminator[$data["%s"]];', $propertyType);
             $bodyLines[] = 'return $this->normalizer->getNormalizer($class)->newInstance($data, $format, $context);';
 
@@ -227,11 +233,13 @@ final class NormalizerClassGenerator
                 ->setPrivate();
 
             $newInstanceMethod->setBody(CodeGenerator::dumpCode($bodyLines));
+
             return;
         }
 
-        if ((null === $constructor = $metadata->getReflectionClass()->getConstructor()) || $constructor->getNumberOfParameters() === 0) {
+        if ((null === $constructor = $metadata->getReflectionClass()->getConstructor()) || 0 === $constructor->getNumberOfParameters()) {
             $newInstanceMethod->setBody(sprintf('return new \%s();', $metadata->getName()));
+
             return;
         }
 
@@ -267,24 +275,24 @@ final class NormalizerClassGenerator
 
             $needsDenormalization = false;
             $dataType = null;
-            if ($type->getBuiltinType() === Type::BUILTIN_TYPE_OBJECT) {
+            if (Type::BUILTIN_TYPE_OBJECT === $type->getBuiltinType()) {
                 $needsDenormalization = true;
                 $dataType = $type->getClassName();
             } elseif (!empty($type->getCollectionValueTypes())) {
                 $needsDenormalization = true;
                 $collectionType = $type->getCollectionValueTypes()[0];
-                $dataType = ($collectionType->getClassName() ?? $collectionType->getBuiltinType()) . '[]';
+                $dataType = ($collectionType->getClassName() ?? $collectionType->getBuiltinType()).'[]';
             }
 
             if ($needsDenormalization) {
                 $propertyCode = sprintf("\$args['%s'] = \$this->serializer->denormalize(\$data['%s'], '%s', \$format, \$this->createContextForProperty('%s', \$context))", $parameter->getName(), $serializedName, $dataType, $parameter->getName());
             }
 
-            $bodyLines[] = CodeGenerator::wrapIf("isset(\$allowedAttributes['$parameter->name']) && array_key_exists('$serializedName', \$data)", $propertyCode . ';');
+            $bodyLines[] = CodeGenerator::wrapIf("isset(\$allowedAttributes['$parameter->name']) && array_key_exists('$serializedName', \$data)", $propertyCode.';');
             $params[] = sprintf("\$args['%s']", $parameter->getName());
         }
 
-        $bodyLines[] = sprintf('return new \%s(%s);', $metadata->getName(), join(', ', $params));
+        $bodyLines[] = sprintf('return new \%s(%s);', $metadata->getName(), implode(', ', $params));
 
         $newInstanceMethod->setBody(CodeGenerator::dumpCode($bodyLines));
     }
@@ -294,7 +302,7 @@ final class NormalizerClassGenerator
         if (null !== $this->classDiscriminatorResolver && null !== $mapping = $this->classDiscriminatorResolver->getMappingForMappedObject($metadata->getName())) {
             return [
                 $mapping->getTypeProperty(),
-                array_search($metadata->getName(), $mapping->getTypesMapping())
+                array_search($metadata->getName(), $mapping->getTypesMapping()),
             ];
         }
 

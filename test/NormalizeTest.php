@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/*
+ * This file is part of the Tsantos Object Normalizer package.
+ * (c) Tales Santos <tales.augusto.santos@gmail.com>
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Tsantos\Test\Symfony\Serializer\Normalizer;
 
 use Doctrine\Common\Annotations\AnnotationReader;
@@ -15,8 +22,8 @@ use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
 use Symfony\Component\Serializer\Serializer;
 use Tsantos\Symfony\Serializer\Normalizer\FastObjectNormalizer;
-use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassGenerator;
 use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassDumper;
+use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassGenerator;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyA;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithConstructor;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithPrivateAttribute;
@@ -35,9 +42,9 @@ class NormalizeTest extends TestCase
             new ArrayDenormalizer(),
             new FastObjectNormalizer(
                 classGenerator: new NormalizerClassGenerator($classMetadataFactory, $discriminator),
-                classDumper: new NormalizerClassDumper(__DIR__ . '/var', true),
+                classDumper: new NormalizerClassDumper(__DIR__.'/var', true),
                 classMetadataFactory: $classMetadataFactory,
-            )
+            ),
         ], ['json' => new JsonEncoder()]);
     }
 
@@ -67,7 +74,7 @@ class NormalizeTest extends TestCase
         $subject = $this->createDummyObject();
 
         $result = $this->serializer->normalize($subject, 'json', [
-            AbstractNormalizer::GROUPS => ['foo-group', 'bar-group']
+            AbstractNormalizer::GROUPS => ['foo-group', 'bar-group'],
         ]);
 
         $this->assertSame('foo1', $result['string']);
@@ -81,7 +88,7 @@ class NormalizeTest extends TestCase
         $subject = $this->createDummyObject();
 
         $result = $this->serializer->normalize($subject, 'json', [
-            AbstractNormalizer::ATTRIBUTES => ['string', 'int', 'objectCollection' => ['foo']]
+            AbstractNormalizer::ATTRIBUTES => ['string', 'int', 'objectCollection' => ['foo']],
         ]);
 
         $this->assertSame('foo1', $result['string']);
@@ -97,7 +104,7 @@ class NormalizeTest extends TestCase
     public function testNormalizeWithIgnoreAttribute(): void
     {
         $subject = $this->createDummyObject();
-        $result = $this->serializer->normalize($subject, );
+        $result = $this->serializer->normalize($subject);
         $this->assertArrayNotHasKey('ignored', $result);
     }
 
@@ -105,7 +112,7 @@ class NormalizeTest extends TestCase
     {
         $subject = $this->createDummyObject();
         $result = $this->serializer->normalize($subject, 'json', [
-            AbstractNormalizer::IGNORED_ATTRIBUTES => ['string', 'objectCollection' => ['foo']]
+            AbstractNormalizer::IGNORED_ATTRIBUTES => ['string', 'objectCollection' => ['foo']],
         ]);
         $this->assertArrayNotHasKey('string', $result);
 

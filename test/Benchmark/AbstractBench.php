@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/*
+ * This file is part of the Tsantos Object Normalizer package.
+ * (c) Tales Santos <tales.augusto.santos@gmail.com>
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Tsantos\Test\Symfony\Serializer\Normalizer\Benchmark;
 
 use PhpBench\Attributes\Iterations;
@@ -23,7 +30,7 @@ abstract class AbstractBench
         $this->serializer = new Serializer($this->getNormalizers(), ['json' => new JsonEncoder()]);
     }
 
-    abstract function getNormalizers(): array;
+    abstract public function getNormalizers(): array;
 
     #[Iterations(5)]
     #[Warmup(1)]
@@ -39,7 +46,7 @@ abstract class AbstractBench
     public function benchNormalizeWithGroups(array $data): void
     {
         $this->serializer->normalize($data, 'json', [
-            'groups' => ['foo-group']
+            'groups' => ['foo-group'],
         ]);
     }
 
@@ -72,7 +79,7 @@ abstract class AbstractBench
     public function generateObjects(): array
     {
         $data = [];
-        for ($i = 1; $i <= 1000; $i++) {
+        for ($i = 1; $i <= 1000; ++$i) {
             $data[] = $subject = new Php80WithAccessors();
             $subject->string = 'foo1';
             $subject->stringWithDocBlock = 'foo2';
@@ -84,58 +91,58 @@ abstract class AbstractBench
         }
 
         return [
-            'all' => $data
+            'all' => $data,
         ];
     }
 
     public function generateNormalizedData(): array
     {
         $data = [];
-        for ($i = 1; $i <= 1000; $i++) {
+        for ($i = 1; $i <= 1000; ++$i) {
             $data[] = [
                 'string' => 'foo1',
                 'stringWithDocBlock' => 'foo2',
                 'float' => 1.1,
                 'int' => 1,
                 'array' => ['foo' => 'bar'],
-                'intCollection' => [1,2,3,4],
+                'intCollection' => [1, 2, 3, 4],
                 'objectCollection' => [
                     ['foo' => 'bar1'],
                     ['foo' => 'bar1'],
                     ['foo' => 'bar1'],
                     ['foo' => 'bar1'],
-                ]
+                ],
             ];
         }
 
         return [
-            'all' => $data
+            'all' => $data,
         ];
     }
 
     public function generateDenormalizedDataWithPrivateProperties(): array
     {
         $data = [];
-        for ($i = 1; $i <= 1000; $i++) {
+        for ($i = 1; $i <= 1000; ++$i) {
             $data[] = new DummyWithPrivateAttribute('private', 'public');
         }
 
         return [
-            'all' => $data
+            'all' => $data,
         ];
     }
 
     public function generateDataForDummyInterface(): array
     {
         $data = [];
-        for ($i = 1; $i <= 2; $i++) {
+        for ($i = 1; $i <= 2; ++$i) {
             $data[] = [
-                'type' => 'dummyA'
+                'type' => 'dummyA',
             ];
         }
 
         return [
-            'all' => $data
+            'all' => $data,
         ];
     }
 }

@@ -2,3 +2,4 @@ vendor
 test/var/*
 !test/var/.gitkeep
 .phpunit.result.cache
+.php-cs-fixer.cache

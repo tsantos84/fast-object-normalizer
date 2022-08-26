@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/*
+ * This file is part of the Tsantos Object Normalizer package.
+ * (c) Tales Santos <tales.augusto.santos@gmail.com>
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Tsantos\Symfony\Serializer\Normalizer;
 
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
@@ -14,10 +21,9 @@ abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFa
     protected readonly \ReflectionClass $refClass;
 
     public function __construct(
-        protected readonly Serializer           $serializer,
+        protected readonly Serializer $serializer,
         protected readonly FastObjectNormalizer $normalizer,
-    )
-    {
+    ) {
         $this->refClass = new \ReflectionClass(static::$targetType);
     }
 
@@ -26,7 +32,7 @@ abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFa
         if (!isset($context[AbstractNormalizer::GROUPS])) {
             $attributes = static::$allowedAttributes['*'] ?? [];
         } else {
-            $groupsKey = implode('-', (array)$context[AbstractNormalizer::GROUPS]);
+            $groupsKey = implode('-', (array) $context[AbstractNormalizer::GROUPS]);
             if (isset(static::$allowedAttributes[$groupsKey])) {
                 $attributes = static::$allowedAttributes[$groupsKey];
             } else {
@@ -40,20 +46,20 @@ abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFa
 
         if (isset($context[AbstractNormalizer::ATTRIBUTES])) {
             $filtered = [];
-            foreach ((array)$context[AbstractNormalizer::ATTRIBUTES] as $key => $attribute) {
-                $filtered[] = is_array($attribute) ? $key : $attribute;
+            foreach ((array) $context[AbstractNormalizer::ATTRIBUTES] as $key => $attribute) {
+                $filtered[] = \is_array($attribute) ? $key : $attribute;
             }
             $attributes = array_intersect_key($attributes, array_flip($filtered));
         }
 
         if (isset($context[AbstractNormalizer::IGNORED_ATTRIBUTES])) {
             $filtered = [];
-            foreach ((array)$context[AbstractNormalizer::IGNORED_ATTRIBUTES] as $key => $attribute) {
+            foreach ((array) $context[AbstractNormalizer::IGNORED_ATTRIBUTES] as $key => $attribute) {
                 // allowing nested object to be de-normalized
-                if (is_array($attribute) && !empty($attribute)) {
+                if (\is_array($attribute) && !empty($attribute)) {
                     continue;
                 }
-                $filtered[] = is_array($attribute) && !empty($attribute) ? $key : $attribute;
+                $filtered[] = \is_array($attribute) && !empty($attribute) ? $key : $attribute;
             }
             $attributes = array_diff_key($attributes, array_flip($filtered));
         }

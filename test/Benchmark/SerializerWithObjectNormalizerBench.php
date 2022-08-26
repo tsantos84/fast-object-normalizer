@@ -2,10 +2,16 @@
 
 declare(strict_types=1);
 
+/*
+ * This file is part of the Tsantos Object Normalizer package.
+ * (c) Tales Santos <tales.augusto.santos@gmail.com>
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Tsantos\Test\Symfony\Serializer\Normalizer\Benchmark;
 
 use Doctrine\Common\Annotations\AnnotationReader;
-use PhpBench\Attributes\Skip;
 use Symfony\Component\Serializer\Mapping\ClassDiscriminatorFromClassMetadata;
 use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactory;
 use Symfony\Component\Serializer\Mapping\Loader\AnnotationLoader;
@@ -30,7 +36,7 @@ final class SerializerWithObjectNormalizerBench extends AbstractBench
             new ObjectNormalizer(
                 classMetadataFactory: $classMetadataFactory,
                 classDiscriminatorResolver: $discriminator
-            )
+            ),
         ];
     }
 }

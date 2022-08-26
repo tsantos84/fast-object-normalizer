@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/*
+ * This file is part of the Tsantos Object Normalizer package.
+ * (c) Tales Santos <tales.augusto.santos@gmail.com>
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Tsantos\Test\Symfony\Serializer\Normalizer;
 
 use Nette\PhpGenerator\PhpFile;
@@ -24,13 +31,13 @@ class NormalizerClassDumperTest extends TestCase
     protected function setUp(): void
     {
         $this->filesystem = new Filesystem();
-        $this->outputDir = sys_get_temp_dir() . '/generated_classes';
+        $this->outputDir = sys_get_temp_dir().'/generated_classes';
         $this->filesystem->mkdir($this->outputDir);
     }
 
     protected function tearDown(): void
     {
-        if (is_string($this->outputDir)) {
+        if (\is_string($this->outputDir)) {
             $this->filesystem->remove($this->outputDir);
         }
     }

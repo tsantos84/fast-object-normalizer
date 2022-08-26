@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/*
+ * This file is part of the Tsantos Object Normalizer package.
+ * (c) Tales Santos <tales.augusto.santos@gmail.com>
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Tsantos\Test\Symfony\Serializer\Normalizer;
 
 use Doctrine\Common\Annotations\AnnotationReader;
@@ -12,8 +19,8 @@ use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactory;
 use Symfony\Component\Serializer\Mapping\Loader\AnnotationLoader;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
 use Symfony\Component\Serializer\Serializer;
-use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassDumper;
 use Tsantos\Symfony\Serializer\Normalizer\FastObjectNormalizer;
+use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassDumper;
 use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassGenerator;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyA;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyInterface;
@@ -35,9 +42,9 @@ final class DenormalizeTest extends TestCase
             new ArrayDenormalizer(),
             new FastObjectNormalizer(
                 classGenerator: new NormalizerClassGenerator($classMetadataFactory, $discriminator),
-                classDumper: new NormalizerClassDumper(__DIR__ . '/var', true),
+                classDumper: new NormalizerClassDumper(__DIR__.'/var', true),
                 classMetadataFactory: $classMetadataFactory,
-            )
+            ),
         ], ['json' => new JsonEncoder()]);
     }
 
@@ -52,7 +59,7 @@ final class DenormalizeTest extends TestCase
                 ['foo' => 'foo', 'bar' => 'bar'],
                 ['foo' => 'foo', 'bar' => 'bar'],
             ],
-            'intCollection' => [1, 2, 3, 4]
+            'intCollection' => [1, 2, 3, 4],
         ];
 
         $result = $this->serializer->denormalize($data, Php80WithoutAccessors::class);
@@ -70,7 +77,7 @@ final class DenormalizeTest extends TestCase
     {
         $data = [
             'private' => 'private',
-            'public' => 'public'
+            'public' => 'public',
         ];
 
         $result = $this->serializer->denormalize($data, DummyWithPrivateAttribute::class);
@@ -94,11 +101,11 @@ final class DenormalizeTest extends TestCase
         $data = [
             'string' => 'foo',
             'int' => 10,
-            'nullable' => 1
+            'nullable' => 1,
         ];
 
         $result = $this->serializer->denormalize($data, Php80WithoutAccessors::class, 'json', [
-            'groups' => ['foo-group']
+            'groups' => ['foo-group'],
         ]);
 
         $this->assertInstanceOf(Php80WithoutAccessors::class, $result);
@@ -112,7 +119,7 @@ final class DenormalizeTest extends TestCase
         $data = [
             'string' => 'foo',
             'int' => 10,
-            'ignored' => 'ignored'
+            'ignored' => 'ignored',
         ];
 
         $result = $this->serializer->denormalize($data, Php80WithoutAccessors::class);

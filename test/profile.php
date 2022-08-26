@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/*
+ * This file is part of the Tsantos Object Normalizer package.
+ * (c) Tales Santos <tales.augusto.santos@gmail.com>
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 use Doctrine\Common\Annotations\AnnotationReader;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Mapping\ClassDiscriminatorFromClassMetadata;
@@ -9,13 +16,13 @@ use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactory;
 use Symfony\Component\Serializer\Mapping\Loader\AnnotationLoader;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
 use Symfony\Component\Serializer\Serializer;
-use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassGenerator;
-use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassDumper;
 use Tsantos\Symfony\Serializer\Normalizer\FastObjectNormalizer;
+use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassDumper;
+use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassGenerator;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithConstructor;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\Php80WithoutAccessors;
 
-require __DIR__ . '/../vendor/autoload.php';
+require __DIR__.'/../vendor/autoload.php';
 
 $classMetadataFactory = new ClassMetadataFactory(new AnnotationLoader(new AnnotationReader()));
 $discriminator = new ClassDiscriminatorFromClassMetadata($classMetadataFactory);
@@ -24,12 +31,13 @@ $serializer = new Serializer([
     new ArrayDenormalizer(),
     new FastObjectNormalizer(
         classGenerator: new NormalizerClassGenerator($classMetadataFactory, $discriminator),
-        classDumper: new NormalizerClassDumper(__DIR__ . '/var', false),
+        classDumper: new NormalizerClassDumper(__DIR__.'/var', false),
         classMetadataFactory: $classMetadataFactory,
-    )
+    ),
 ], ['json' => new JsonEncoder()]);
 
-function createDummyObject(): Php80WithoutAccessors {
+function createDummyObject(): Php80WithoutAccessors
+{
     $object = new Php80WithoutAccessors();
     $object->string = 'foo1';
     $object->stringWithDocBlock = 'foo2';
