@@ -237,7 +237,7 @@ final class NormalizerClassGenerator
 
         $params = [];
         $bodyLines = ['$args = [];'];
-        $bodyLines[] = '$allowedAttributes = $context[\'allowed_attributes\'][\''.$metadata->getName().'\'] ?? self::$allowedAttributes;';
+        $bodyLines[] = '$allowedAttributes = $this->getAllowedAttributes($context);';
 
         $classAttributes = [];
 

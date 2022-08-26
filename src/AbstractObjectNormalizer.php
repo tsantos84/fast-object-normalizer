@@ -23,22 +23,25 @@ abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFa
     protected function getAllowedAttributes(array $context): array
     {
         if (!isset($context[AbstractNormalizer::GROUPS])) {
-            return static::$allowedAttributes['*'] ?? [];
+            $attributes = static::$allowedAttributes['*'] ?? [];
+        } else {
+            $groupsKey = implode('-', (array)$context[AbstractNormalizer::GROUPS]);
+            if (isset(static::$allowedAttributes[$groupsKey])) {
+                $attributes = static::$allowedAttributes[$groupsKey];
+            } else {
+                $attributes = [];
+                foreach ($context[AbstractNormalizer::GROUPS] as $group) {
+                    $attributes = array_merge($attributes, static::$allowedAttributes[$group] ?? []);
+                }
+                static::$allowedAttributes[$groupsKey] = $attributes;
+            }
         }
 
-        $groupsKey = implode('-', (array) $context[AbstractNormalizer::GROUPS]);
-
-        if (isset(static::$allowedAttributes[$groupsKey])) {
-            return static::$allowedAttributes[$groupsKey];
+        if (isset($context[AbstractNormalizer::ATTRIBUTES])) {
+            $attributes = array_intersect_key($attributes, array_flip($context[AbstractNormalizer::ATTRIBUTES]));
         }
 
-        $attributes = [];
-
-        foreach ($context[AbstractNormalizer::GROUPS] as $group) {
-            $attributes = array_merge($attributes, static::$allowedAttributes[$group] ?? []);
-        }
-
-        return static::$allowedAttributes[$groupsKey] = $attributes;
+        return $attributes;
     }
 
     public function hasCacheableSupportsMethod(): bool

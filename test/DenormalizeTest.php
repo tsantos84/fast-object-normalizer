@@ -39,7 +39,7 @@ final class DenormalizeTest extends TestCase
             new ArrayDenormalizer(),
             new FastObjectNormalizer(
                 classGenerator: new NormalizerClassGenerator($classMetadataFactory, $discriminator),
-                classDumper: new NormalizerClassDumper(__DIR__ . '/var'),
+                classDumper: new NormalizerClassDumper(__DIR__ . '/var', true),
                 classMetadataFactory: $classMetadataFactory,
             )
         ], ['json' => new JsonEncoder()]);
