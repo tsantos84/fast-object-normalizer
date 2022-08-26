@@ -33,6 +33,8 @@ final class FastObjectNormalizer extends AbstractNormalizer implements Normalize
     public function __construct(
         private readonly NormalizerClassGenerator $classGenerator,
         private readonly NormalizerClassDumper $classDumper,
+        private readonly array $includedTypes = [],
+        private readonly array $excludedTypes = [],
         ClassMetadataFactoryInterface $classMetadataFactory = null,
         NameConverterInterface $nameConverter = null,
         array $defaultContext = []
@@ -49,7 +51,7 @@ final class FastObjectNormalizer extends AbstractNormalizer implements Normalize
 
     public function supportsDenormalization(mixed $data, string $type, string $format = null)
     {
-        return !\array_key_exists($type, self::SCALAR_TYPES);
+        return $this->supportType($type);
     }
 
     public function normalize(mixed $object, string $format = null, array $context = [])
@@ -65,7 +67,28 @@ final class FastObjectNormalizer extends AbstractNormalizer implements Normalize
 
     public function supportsNormalization(mixed $data, string $format = null)
     {
-        return \is_object($data) && !$data instanceof \Iterator;
+        if (!is_object($data) || $data instanceof \Iterator) {
+            return false;
+        }
+
+        return $this->supportType(get_class($data));
+    }
+
+    private function supportType(string $type): bool
+    {
+        foreach ($this->includedTypes as $include) {
+            if (preg_match('/'.$include.'/', $type) > 0) {
+                return true;
+            }
+        }
+
+        foreach ($this->excludedTypes as $exclude) {
+            if (preg_match('/'.$exclude.'/', $type) > 0) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public function getNormalizer(string|object $classOrObject): NormalizerInterface
