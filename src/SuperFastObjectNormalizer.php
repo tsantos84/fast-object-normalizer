@@ -4,17 +4,13 @@ declare(strict_types=1);
 
 namespace Tsantos\Symfony\Serializer\Normalizer;
 
-use PhpBench\Reflection\ReflectionClass;
-use Symfony\Component\Serializer\Mapping\ClassDiscriminatorResolverInterface;
 use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactoryInterface;
 use Symfony\Component\Serializer\NameConverter\NameConverterInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
-use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
-use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Serializer\SerializerAwareInterface;
 use Symfony\Component\Serializer\SerializerAwareTrait;
 
-final class SuperFastObjectNormalizer extends AbstractNormalizer implements NormalizerInterface, DenormalizerInterface, SerializerAwareInterface
+final class SuperFastObjectNormalizer extends AbstractNormalizer implements NormalizerInterface, SerializerAwareInterface
 {
     use SerializerAwareTrait;
 
@@ -28,11 +24,11 @@ final class SuperFastObjectNormalizer extends AbstractNormalizer implements Norm
     ];
 
     public function __construct(
-        private readonly NormalizerClassGenerator                     $classGenerator,
-        private readonly NormalizerClassPersister                     $classPersister,
-        ClassMetadataFactoryInterface                         $classMetadataFactory = null,
-        NameConverterInterface                                $nameConverter = null,
-        array                                                 $defaultContext = []
+        private readonly NormalizerClassGenerator $classGenerator,
+        private readonly NormalizerClassDumper    $classDumper,
+        ClassMetadataFactoryInterface             $classMetadataFactory = null,
+        NameConverterInterface                    $nameConverter = null,
+        array                                     $defaultContext = []
     )
     {
         parent::__construct($classMetadataFactory, $nameConverter, $defaultContext);
@@ -60,7 +56,7 @@ final class SuperFastObjectNormalizer extends AbstractNormalizer implements Norm
             return $this->handleCircularReference($object, $format, $context);
         }
 
-        $normalizer = $this->getNormalizer($object, $context);
+        $normalizer = $this->getNormalizer($object);
 
         if (false !== $attributes = $this->getAllowedAttributes($object, $context, true)) {
             $context['allowed_attributes'][get_class($object)] = array_flip($attributes);
@@ -74,7 +70,7 @@ final class SuperFastObjectNormalizer extends AbstractNormalizer implements Norm
         return is_object($data) && !$data instanceof \Iterator;
     }
 
-    public function getNormalizer(string|object $classOrObject): NormalizerInterface & DenormalizerInterface & ObjectFactoryInterface
+    public function getNormalizer(string|object $classOrObject): NormalizerInterface
     {
         $class = is_object($classOrObject) ? get_class($classOrObject) : $classOrObject;
 
@@ -82,10 +78,23 @@ final class SuperFastObjectNormalizer extends AbstractNormalizer implements Norm
             return $this->loaded[$class];
         }
 
-        $phpFile = $this->classGenerator->generate($class);
+        $config = new NormalizerClassConfig($class, $this->classDumper->outputDir);
 
-        $generatedClass = $this->classPersister->persist($phpFile);
+        if (!$config->fileExists()) {
+            $phpFile = $this->classGenerator->generate($config);
+            $this->classDumper->dump($config, $phpFile);
+        } elseif (!$config->isLoaded()) {
+            $config->load();
+        }
 
-        return $this->loaded[$class] = new $generatedClass($this->serializer, $this);
+        return $this->loaded[$class] = $config->newInstance([
+            'serializer' => $this->serializer,
+            'normalizer' => $this
+        ]);
+    }
+
+    public function hasCacheableSupportsMethod(): bool
+    {
+        return true;
     }
 }

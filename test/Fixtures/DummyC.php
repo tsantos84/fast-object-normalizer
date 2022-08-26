@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures;
 
-class DummyB implements DummyInterface
+class DummyC implements DummyInterface
 {
-    private string $type = 'dummyB';
+    private string $type = 'dummyC';
 }

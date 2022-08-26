@@ -6,5 +6,5 @@ namespace Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures;
 
 final class DummyA implements DummyInterface
 {
-
+    private string $type = 'dummyA';
 }

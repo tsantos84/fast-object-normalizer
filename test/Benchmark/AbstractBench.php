@@ -9,6 +9,7 @@ use PhpBench\Attributes\ParamProviders;
 use PhpBench\Attributes\Warmup;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Serializer;
+use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyInterface;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithConstructor;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithPrivateAttribute;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\Php80WithAccessors;
@@ -56,6 +57,16 @@ abstract class AbstractBench
     public function benchNormalizePrivateProperties(array $data): void
     {
         $this->serializer->normalize($data, 'json');
+    }
+
+    #[Iterations(5)]
+    #[Warmup(1)]
+    #[ParamProviders('generateDataForDummyInterface')]
+    public function benchDenormalizeInterface(array $data): void
+    {
+        foreach ($data as $row) {
+            $this->serializer->denormalize($row, DummyInterface::class, 'json');
+        }
     }
 
     public function generateObjects(): array
@@ -107,6 +118,20 @@ abstract class AbstractBench
         $data = [];
         for ($i = 1; $i <= 1000; $i++) {
             $data[] = new DummyWithPrivateAttribute('private', 'public');
+        }
+
+        return [
+            'all' => $data
+        ];
+    }
+
+    public function generateDataForDummyInterface(): array
+    {
+        $data = [];
+        for ($i = 1; $i <= 2; $i++) {
+            $data[] = [
+                'type' => 'dummyA'
+            ];
         }
 
         return [

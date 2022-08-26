@@ -13,18 +13,19 @@ use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactory;
 use Symfony\Component\Serializer\Mapping\Loader\AnnotationLoader;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
-use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
-use Symfony\Component\Serializer\Normalizer\DateTimeZoneNormalizer;
-use Symfony\Component\Serializer\Normalizer\UidNormalizer;
 use Symfony\Component\Serializer\Serializer;
 use Tsantos\Symfony\Serializer\Normalizer\SuperFastObjectNormalizer;
 use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassGenerator;
-use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassPersister;
+use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassDumper;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyA;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithConstructor;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithPrivateAttribute;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\Php80WithoutAccessors;
 
+/**
+ * @runTestsInSeparateProcesses
+ * @preserveGlobalState disabled
+ */
 class NormalizeTest extends TestCase
 {
     private Serializer $serializer;
@@ -38,7 +39,7 @@ class NormalizeTest extends TestCase
             new ArrayDenormalizer(),
             new SuperFastObjectNormalizer(
                 classGenerator: new NormalizerClassGenerator($classMetadataFactory, $discriminator),
-                classPersister: new NormalizerClassPersister(__DIR__ . '/var'),
+                classDumper: new NormalizerClassDumper(__DIR__ . '/var'),
                 classMetadataFactory: $classMetadataFactory,
             )
         ], ['json' => new JsonEncoder()]);

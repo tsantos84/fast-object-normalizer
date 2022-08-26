@@ -9,6 +9,7 @@ use Symfony\Component\Serializer\Annotation\DiscriminatorMap;
 #[DiscriminatorMap(typeProperty: 'type', mapping: [
     'dummyA' => DummyA::class,
     'dummyB' => DummyB::class,
+    'dummyC' => DummyC::class,
 ])]
 interface DummyInterface
 {

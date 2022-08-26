@@ -6,7 +6,6 @@ namespace Tsantos\Symfony\Serializer\Normalizer;
 
 use Nette\PhpGenerator\ClassType;
 use Nette\PhpGenerator\PhpFile;
-use Nette\PhpGenerator\PhpNamespace;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
@@ -17,11 +16,6 @@ use Symfony\Component\Serializer\Mapping\ClassDiscriminatorResolverInterface;
 use Symfony\Component\Serializer\Mapping\ClassMetadataInterface;
 use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactoryInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
-use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
-use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
-use Symfony\Component\Serializer\Serializer;
-use Tsantos\Symfony\Serializer\Normalizer\Exception\MissingDiscriminatorKeyException;
-use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyA;
 
 final class NormalizerClassGenerator
 {
@@ -50,68 +44,32 @@ final class NormalizerClassGenerator
         );
     }
 
-    public function generate(object|string $target, ?string $namespace = null): PhpFile
+    public function generate(NormalizerClassConfig $config): PhpFile
     {
-        if (is_object($target)) {
-            $target = get_class($target);
-        }
-
-        $ref = new \ReflectionClass($target);
-
-        $className = 'Generated' . $ref->getShortName() . 'Normalizer';
-
-        if (null !== $namespace) {
-            $className = $namespace . '\\' . $className;
-        }
-
-        $metadata = $this->metadataFactory->getMetadataFor($ref->getName());
+        $metadata = $this->metadataFactory->getMetadataFor($config->subjectClassName);
 
         $phpFile = new PhpFile();
         $phpFile
             ->setStrictTypes();
 
         $class = $phpFile
-            ->addClass($className)
+            ->addClass($config->normalizerClassName)
             ->setFinal()
-            ->addImplement(NormalizerInterface::class)
-            ->addImplement(DenormalizerInterface::class)
-            ->addImplement(ObjectFactoryInterface::class)
+            ->setExtends(\Tsantos\Symfony\Serializer\Normalizer\AbstractNormalizer::class)
             ->addComment('Auto-generated class! Do not change it by yourself.');
 
         $class
-            ->addProperty('refClass')
-            ->setType(\ReflectionClass::class)
-            ->setPrivate();
+            ->addProperty('targetType', $metadata->getName())
+            ->setType('string')
+            ->setStatic()
+            ->setProtected();
 
         $this->buildAllowedAttributes($class, $metadata);
-        $this->buildConstructorMethod($class, $metadata);
-
         $this->buildNormalizeMethod($class, $metadata);
-        $this->buildSupportsNormalizationMethod($class, $metadata);
-
         $this->buildDenormalizeMethod($class, $metadata);
-        $this->buildSupportsDenormalizationMethod($class, $metadata);
-
         $this->buildNewInstanceMethod($class, $metadata);
 
         return $phpFile;
-    }
-
-    private function buildConstructorMethod(ClassType $class, ClassMetadataInterface $metadata): void
-    {
-        $constructor = $class->addMethod('__construct');
-        $constructor
-            ->addPromotedParameter('serializer')
-            ->setType(Serializer::class)
-            ->setPrivate()
-            ->setReadOnly();
-
-        $constructor->addPromotedParameter('normalizer')
-            ->setType(SuperFastObjectNormalizer::class)
-            ->setPrivate()
-            ->setReadOnly();
-
-        $constructor->setBody('$this->refClass = new \ReflectionClass(\''.$metadata->getName().'\');');
     }
 
     private function buildAllowedAttributes(ClassType $classType, ClassMetadataInterface $metadata): void
@@ -183,17 +141,6 @@ final class NormalizerClassGenerator
         $normalizeMethod->setBody(CodeGenerator::dumpCode($bodyLines));
     }
 
-    private function buildSupportsNormalizationMethod(ClassType $class, ClassMetadataInterface $metadata): void
-    {
-        $supportsNormalizeMethod = $class->addMethod('supportsNormalization');
-        $supportsNormalizeMethod->addParameter('data')->setType('mixed');
-        $supportsNormalizeMethod->addParameter('format', null)->setType('string');
-        $supportsNormalizeMethod->setBody(<<<STRING
-return \$data instanceof \\$metadata->name;
-STRING
-        );
-    }
-
     private function buildDenormalizeMethod(ClassType $class, ClassMetadataInterface $metadata): void
     {
         $denormalize = $class->addMethod('denormalize');
@@ -251,18 +198,6 @@ STRING
         $bodyLines[] = 'return $object;';
 
         $denormalize->setBody(CodeGenerator::dumpCode($bodyLines));
-    }
-
-    private function buildSupportsDenormalizationMethod(ClassType $class, ClassMetadataInterface $metadata): void
-    {
-        $supportsNormalizeMethod = $class->addMethod('supportsDenormalization');
-        $supportsNormalizeMethod->addParameter('data')->setType('mixed');
-        $supportsNormalizeMethod->addParameter('type')->setType('string');
-        $supportsNormalizeMethod->addParameter('format', null)->setType('string');
-        $supportsNormalizeMethod->setBody(<<<STRING
-return \$type === '\\$metadata->name';
-STRING
-        );
     }
 
     private function buildNewInstanceMethod(ClassType $class, ClassMetadataInterface $metadata): void
