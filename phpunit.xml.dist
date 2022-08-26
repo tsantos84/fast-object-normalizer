@@ -15,16 +15,13 @@
     <testsuites>
         <testsuite name="Symfony Serializer Component Test Suite">
             <directory>./test/</directory>
+            <exclude>./test/Benchmark</exclude>
         </testsuite>
     </testsuites>
 
     <coverage>
         <include>
-            <directory>./</directory>
+            <directory>./src</directory>
         </include>
-        <exclude>
-            <directory>./test</directory>
-            <directory>./vendor</directory>
-        </exclude>
     </coverage>
 </phpunit>

@@ -35,5 +35,9 @@
     ],
     "config": {
         "bin-dir": "./bin"
+    },
+    "scripts": {
+        "benchmark": "@php -dmemory_limit=-1 vendor/bin/phpbench run test/Benchmark/ --report=default --report=tsantos",
+        "test": "phpunit -c phpunit.xml.dist"
     }
 }
