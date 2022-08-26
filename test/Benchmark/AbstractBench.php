@@ -80,7 +80,7 @@ abstract class AbstractBench
             $subject->int = 1;
             $subject->array = ['foo' => 'bar'];
             $subject->intCollection = [1, 2, 3];
-            $subject->objectCollection = [new DummyWithConstructor('bar1')];
+            $subject->objectCollection = [new DummyWithConstructor('foo', 'bar')];
         }
 
         return [

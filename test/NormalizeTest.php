@@ -22,10 +22,6 @@ use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithConstructor;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithPrivateAttribute;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\Php80WithoutAccessors;
 
-/**
- * @runTestsInSeparateProcesses
- * @preserveGlobalState disabled
- */
 class NormalizeTest extends TestCase
 {
     private Serializer $serializer;
@@ -54,7 +50,7 @@ class NormalizeTest extends TestCase
         $this->assertSame('foo1', $result['string']);
         $this->assertSame(1.1, $result['float']);
         $this->assertSame(['foo' => 'bar'], $result['array']);
-        $this->assertSame([['foo' => 'bar1']], $result['objectCollection']);
+        $this->assertSame([['foo' => 'foo', 'bar' => 'bar']], $result['objectCollection']);
         $this->assertSame([1, 2, 3], $result['intCollection']);
     }
 
@@ -85,12 +81,17 @@ class NormalizeTest extends TestCase
         $subject = $this->createDummyObject();
 
         $result = $this->serializer->normalize($subject, 'json', [
-            AbstractNormalizer::ATTRIBUTES => ['string', 'int']
+            AbstractNormalizer::ATTRIBUTES => ['string', 'int', 'objectCollection' => ['foo']]
         ]);
 
         $this->assertSame('foo1', $result['string']);
         $this->assertSame(1, $result['int']);
         $this->assertArrayNotHasKey('stringWithDocBlock', $result);
+
+        // assert keys of nested objects
+        $this->assertArrayHasKey('objectCollection', $result);
+        $this->assertArrayHasKey('foo', $result['objectCollection'][0]);
+        $this->assertArrayNotHasKey('bar', $result['objectCollection'][0]);
     }
 
     public function testNormalizeWithIgnoreAttribute(): void
@@ -142,7 +143,7 @@ class NormalizeTest extends TestCase
         $object->int = 1;
         $object->array = ['foo' => 'bar'];
         $object->intCollection = [1, 2, 3];
-        $object->objectCollection = [new DummyWithConstructor('bar1')];
+        $object->objectCollection = [new DummyWithConstructor('foo', 'bar')];
         $object->ignored = 'ignored';
         $object->fooName = 'foo';
 

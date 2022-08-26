@@ -130,7 +130,7 @@ final class NormalizerClassGenerator
 
             foreach ($types as $type) {
                 if (Type::BUILTIN_TYPE_OBJECT === $type->getBuiltinType() || Type::BUILTIN_TYPE_ARRAY === $type->getBuiltinType()) {
-                    $getter = sprintf('$this->serializer->normalize(%s, $format, $context);', $getter);
+                    $getter = sprintf('$this->serializer->normalize(%s, $format, $this->createContextForProperty(\'%s\', $context));', $getter, $property->getName());
                     break;
                 }
             }
@@ -189,7 +189,7 @@ final class NormalizerClassGenerator
             }
 
             if ($needsDenormalization) {
-                $denormalizedValue = sprintf('$this->serializer->denormalize(%s, \'%s\', $format, $context)', $rawData, $dataType);
+                $denormalizedValue = sprintf('$this->serializer->denormalize(%s, \'%s\', $format, $this->createContextForProperty(\'%s\', $context))', $rawData, $dataType, $property->getName());
                 if ($nullable) {
                     $denormalizedValue = sprintf('isset(%s) ? %s : null', $rawData, $denormalizedValue);
                 }
@@ -277,7 +277,7 @@ final class NormalizerClassGenerator
             }
 
             if ($needsDenormalization) {
-                $propertyCode = sprintf("\$args['%s'] = \$this->serializer->denormalize(\$data['%s'], '%s', \$format, \$context)", $parameter->getName(), $serializedName, $dataType);
+                $propertyCode = sprintf("\$args['%s'] = \$this->serializer->denormalize(\$data['%s'], '%s', \$format, \$this->createContextForProperty('%s', \$context))", $parameter->getName(), $serializedName, $dataType, $parameter->getName());
             }
 
             $bodyLines[] = CodeGenerator::wrapIf("isset(\$allowedAttributes['$parameter->name']) && array_key_exists('$serializedName', \$data)", $propertyCode . ';');

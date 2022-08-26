@@ -7,7 +7,8 @@ namespace Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures;
 final class DummyWithConstructor
 {
     public function __construct(
-        public string $foo
+        public string $foo,
+        public string $bar
     )
     {
     }
@@ -20,5 +21,15 @@ final class DummyWithConstructor
     public function setFoo(string $foo): void
     {
         $this->foo = $foo;
+    }
+
+    public function getBar(): string
+    {
+        return $this->bar;
+    }
+
+    public function setBar(string $bar): void
+    {
+        $this->bar = $bar;
     }
 }

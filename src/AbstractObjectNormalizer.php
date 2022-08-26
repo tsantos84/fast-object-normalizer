@@ -16,7 +16,8 @@ abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFa
     public function __construct(
         protected readonly Serializer           $serializer,
         protected readonly FastObjectNormalizer $normalizer,
-    ) {
+    )
+    {
         $this->refClass = new \ReflectionClass(static::$targetType);
     }
 
@@ -38,14 +39,37 @@ abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFa
         }
 
         if (isset($context[AbstractNormalizer::ATTRIBUTES])) {
-            $attributes = array_intersect_key($attributes, array_flip((array) $context[AbstractNormalizer::ATTRIBUTES]));
+            $filtered = [];
+            foreach ((array)$context[AbstractNormalizer::ATTRIBUTES] as $key => $attribute) {
+                $filtered[] = is_array($attribute) ? $key : $attribute;
+            }
+            $attributes = array_intersect_key($attributes, array_flip($filtered));
         }
 
         if (isset($context[AbstractNormalizer::IGNORED_ATTRIBUTES])) {
-            $attributes = array_diff_key($attributes, array_flip((array) $context[AbstractNormalizer::IGNORED_ATTRIBUTES]));
+            $filtered = [];
+            foreach ((array)$context[AbstractNormalizer::IGNORED_ATTRIBUTES] as $key => $attribute) {
+                $filtered[] = is_array($attribute) ? $key : $attribute;
+            }
+            $attributes = array_diff_key($attributes, array_flip($filtered));
         }
 
         return $attributes;
+    }
+
+    protected function createContextForProperty(string $property, array $context = []): array
+    {
+        $newContext = $context;
+
+        if (isset($context[AbstractNormalizer::ATTRIBUTES]) && isset($context[AbstractNormalizer::ATTRIBUTES][$property])) {
+            $newContext[AbstractNormalizer::ATTRIBUTES] = $context[AbstractNormalizer::ATTRIBUTES][$property];
+        }
+
+        if (isset($context[AbstractNormalizer::IGNORED_ATTRIBUTES]) && isset($context[AbstractNormalizer::IGNORED_ATTRIBUTES][$property])) {
+            $newContext[AbstractNormalizer::IGNORED_ATTRIBUTES] = $context[AbstractNormalizer::IGNORED_ATTRIBUTES][$property];
+        }
+
+        return $newContext;
     }
 
     public function hasCacheableSupportsMethod(): bool

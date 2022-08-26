@@ -22,10 +22,6 @@ use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithConstructor;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithPrivateAttribute;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\Php80WithoutAccessors;
 
-/**
- * @runTestsInSeparateProcesses
- * @preserveGlobalState disabled
- */
 final class DenormalizeTest extends TestCase
 {
     private Serializer $serializer;
@@ -53,8 +49,8 @@ final class DenormalizeTest extends TestCase
             'int' => 10,
             'array' => ['foo' => 'bar'],
             'objectCollection' => [
-                ['foo' => 'bar'],
-                ['foo' => 'baz'],
+                ['foo' => 'foo', 'bar' => 'bar'],
+                ['foo' => 'foo', 'bar' => 'bar'],
             ],
             'intCollection' => [1, 2, 3, 4]
         ];
@@ -66,8 +62,8 @@ final class DenormalizeTest extends TestCase
         $this->assertSame(1.1, $result->float);
         $this->assertSame(['foo' => 'bar'], $result->array);
         $this->assertCount(2, $result->objectCollection);
-        $this->assertSame('bar', $result->objectCollection[0]->foo);
-        $this->assertSame('baz', $result->objectCollection[1]->foo);
+        $this->assertSame('foo', $result->objectCollection[0]->foo);
+        $this->assertSame('foo', $result->objectCollection[1]->foo);
     }
 
     public function testDenormalizePrivateAttributes(): void
@@ -130,13 +126,14 @@ final class DenormalizeTest extends TestCase
     public function testDenormalizeWithWithAttributesOnConstructor(): void
     {
         $data = [
-            'foo' => ['foo' => 'bar'],
+            'foo' => ['foo' => 'foo', 'bar' => 'bar'],
         ];
 
         $result = $this->serializer->denormalize($data, DummyWithComplexAttributeInConstructor::class);
 
         $this->assertInstanceOf(DummyWithComplexAttributeInConstructor::class, $result);
         $this->assertInstanceOf(DummyWithConstructor::class, $result->foo);
-        $this->assertSame('bar', $result->foo->foo);
+        $this->assertSame('foo', $result->foo->foo);
+        $this->assertSame('bar', $result->foo->bar);
     }
 }
