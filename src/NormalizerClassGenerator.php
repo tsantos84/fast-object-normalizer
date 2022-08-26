@@ -105,7 +105,7 @@ final class NormalizerClassGenerator
     {
         list($discriminatorProperty, $discriminatorValue) = $this->getDiscriminatorData($metadata);
 
-        $normalizeMethod = $class->addMethod('normalize');
+        $normalizeMethod = $class->addMethod('doNormalize')->setProtected()->setReturnType('array');
         $normalizeMethod->addParameter('object')->setType('mixed');
         $normalizeMethod->addParameter('format', null)->setType('string');
         $normalizeMethod->addParameter('context', [])->setType('array');
@@ -136,7 +136,7 @@ final class NormalizerClassGenerator
 
             foreach ($types as $type) {
                 if (Type::BUILTIN_TYPE_OBJECT === $type->getBuiltinType() || Type::BUILTIN_TYPE_ARRAY === $type->getBuiltinType()) {
-                    $getter = sprintf('$this->serializer->normalize(%s, $format, $this->createContextForProperty(\'%s\', $context));', $getter, $property->getName());
+                    $getter = sprintf('$this->serializer->normalize(%s, $format, $this->createChildContext(\'%s\', $context));', $getter, $property->getName());
                     break;
                 }
             }
@@ -155,7 +155,7 @@ final class NormalizerClassGenerator
 
     private function buildDenormalizeMethod(ClassType $class, ClassMetadataInterface $metadata): void
     {
-        $denormalize = $class->addMethod('denormalize');
+        $denormalize = $class->addMethod('doDenormalize')->setProtected()->setReturnType('object');
         $denormalize->addParameter('data')->setType('mixed');
         $denormalize->addParameter('type')->setType('string');
         $denormalize->addParameter('format', null)->setType('string');
@@ -195,7 +195,7 @@ final class NormalizerClassGenerator
             }
 
             if ($needsDenormalization) {
-                $denormalizedValue = sprintf('$this->serializer->denormalize(%s, \'%s\', $format, $this->createContextForProperty(\'%s\', $context))', $rawData, $dataType, $property->getName());
+                $denormalizedValue = sprintf('$this->serializer->denormalize(%s, \'%s\', $format, $this->createChildContext(\'%s\', $context))', $rawData, $dataType, $property->getName());
                 if ($nullable) {
                     $denormalizedValue = sprintf('isset(%s) ? %s : null', $rawData, $denormalizedValue);
                 }
@@ -285,7 +285,7 @@ final class NormalizerClassGenerator
             }
 
             if ($needsDenormalization) {
-                $propertyCode = sprintf("\$args['%s'] = \$this->serializer->denormalize(\$data['%s'], '%s', \$format, \$this->createContextForProperty('%s', \$context))", $parameter->getName(), $serializedName, $dataType, $parameter->getName());
+                $propertyCode = sprintf("\$args['%s'] = \$this->serializer->denormalize(\$data['%s'], '%s', \$format, \$this->createChildContext('%s', \$context))", $parameter->getName(), $serializedName, $dataType, $parameter->getName());
             }
 
             $bodyLines[] = CodeGenerator::wrapIf("isset(\$allowedAttributes['$parameter->name']) && array_key_exists('$serializedName', \$data)", $propertyCode.';');

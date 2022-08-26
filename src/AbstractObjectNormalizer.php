@@ -67,7 +67,7 @@ abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFa
         return $attributes;
     }
 
-    protected function createContextForProperty(string $property, array $context = []): array
+    protected function createChildContext(string $property, array $context = []): array
     {
         $newContext = $context;
 
@@ -79,7 +79,29 @@ abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFa
             $newContext[AbstractNormalizer::IGNORED_ATTRIBUTES] = $context[AbstractNormalizer::IGNORED_ATTRIBUTES][$property];
         }
 
+        if (isset($context[AbstractNormalizer::CALLBACKS]) && isset($context[AbstractNormalizer::CALLBACKS][$property])) {
+            $newContext[AbstractNormalizer::CALLBACKS] = $context[AbstractNormalizer::CALLBACKS][$property];
+        }
+
         return $newContext;
+    }
+
+    public function denormalize(mixed $data, string $type, string $format = null, array $context = [])
+    {
+        return $this->doDenormalize($data, $type, $format, $context);
+    }
+
+    public function normalize(mixed $object, string $format = null, array $context = [])
+    {
+        $data = $this->doNormalize($object, $format, $context);
+
+        foreach ($context[AbstractNormalizer::CALLBACKS] ?? [] as $attribute => $callback) {
+            if (is_callable($callback) && array_key_exists($attribute, $data)) {
+                $data[$attribute] = call_user_func($callback, $data[$attribute], $data, $attribute, $format, $context);
+            }
+        }
+
+        return $data;
     }
 
     public function hasCacheableSupportsMethod(): bool
@@ -96,4 +118,8 @@ abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFa
     {
         return $data instanceof static::$targetType;
     }
+
+    protected abstract function doNormalize(mixed $object, ?string $format = null, array $context = []): array;
+
+    protected abstract function doDenormalize(array $data, string $type, string $format = null, array $context = []): object;
 }

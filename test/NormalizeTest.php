@@ -146,6 +146,26 @@ class NormalizeTest extends TestCase
         $this->assertSame('dummyA', $result['type']);
     }
 
+    public function testNormalizeAttributeWithCallback(): void
+    {
+        $toUpper = fn(string $value): string => strtoupper($value);
+        $subject = $this->createDummyObject();
+        $result = $this->serializer->normalize($subject, null, [
+            AbstractNormalizer::CALLBACKS => [
+                'string' => $toUpper,
+                'objectCollection' => [
+                    'foo' => $toUpper
+                ]
+            ]
+        ]);
+        $this->assertArrayHasKey('string', $result);
+        $this->assertSame('FOO1', $result['string']);
+
+        $this->assertArrayHasKey('objectCollection', $result);
+        $this->assertArrayHasKey('foo', $result['objectCollection'][0]);
+        $this->assertSame('FOO', $result['objectCollection'][0]['foo']);
+    }
+
     private function createDummyObject(): Php80WithoutAccessors
     {
         $object = new Php80WithoutAccessors();
