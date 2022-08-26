@@ -17,6 +17,7 @@ use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Mapping\ClassDiscriminatorFromClassMetadata;
 use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactory;
 use Symfony\Component\Serializer\Mapping\Loader\AnnotationLoader;
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
 use Symfony\Component\Serializer\Serializer;
 use Tsantos\Symfony\Serializer\Normalizer\FastObjectNormalizer;
@@ -142,5 +143,30 @@ final class DenormalizeTest extends TestCase
         $this->assertInstanceOf(DummyWithConstructor::class, $result->foo);
         $this->assertSame('foo', $result->foo->foo);
         $this->assertSame('bar', $result->foo->bar);
+    }
+
+    public function testDenormalizeWithCallbacks(): void
+    {
+        $data = [
+            'string' => 'foo',
+            'objectCollection' => [
+                ['foo' => 'foo', 'bar' => 'bar']
+            ]
+        ];
+
+        $toUpper = fn(string $value): string => strtoupper($value);
+
+        $result = $this->serializer->denormalize($data, Php80WithoutAccessors::class, null, [
+            AbstractNormalizer::CALLBACKS => [
+                'string' => $toUpper,
+                'objectCollection' => [
+                    'foo' => $toUpper
+                ]
+            ]
+        ]);
+
+        $this->assertInstanceOf(Php80WithoutAccessors::class, $result);
+        $this->assertSame('FOO', $result->string);
+        $this->assertSame('FOO', $result->objectCollection[0]->foo);
     }
 }

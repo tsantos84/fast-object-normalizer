@@ -44,7 +44,7 @@ abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFa
             }
         }
 
-        if (isset($context[AbstractNormalizer::ATTRIBUTES])) {
+        if (!empty($context[AbstractNormalizer::ATTRIBUTES])) {
             $filtered = [];
             foreach ((array) $context[AbstractNormalizer::ATTRIBUTES] as $key => $attribute) {
                 $filtered[] = \is_array($attribute) ? $key : $attribute;
@@ -52,7 +52,7 @@ abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFa
             $attributes = array_intersect_key($attributes, array_flip($filtered));
         }
 
-        if (isset($context[AbstractNormalizer::IGNORED_ATTRIBUTES])) {
+        if (!empty($context[AbstractNormalizer::IGNORED_ATTRIBUTES])) {
             $filtered = [];
             foreach ((array) $context[AbstractNormalizer::IGNORED_ATTRIBUTES] as $key => $attribute) {
                 // allowing nested object to be de-normalized
@@ -70,24 +70,17 @@ abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFa
     protected function createChildContext(string $property, array $context = []): array
     {
         $newContext = $context;
-
-        if (isset($context[AbstractNormalizer::ATTRIBUTES]) && isset($context[AbstractNormalizer::ATTRIBUTES][$property])) {
-            $newContext[AbstractNormalizer::ATTRIBUTES] = $context[AbstractNormalizer::ATTRIBUTES][$property];
-        }
-
-        if (isset($context[AbstractNormalizer::IGNORED_ATTRIBUTES]) && isset($context[AbstractNormalizer::IGNORED_ATTRIBUTES][$property])) {
-            $newContext[AbstractNormalizer::IGNORED_ATTRIBUTES] = $context[AbstractNormalizer::IGNORED_ATTRIBUTES][$property];
-        }
-
-        if (isset($context[AbstractNormalizer::CALLBACKS]) && isset($context[AbstractNormalizer::CALLBACKS][$property])) {
-            $newContext[AbstractNormalizer::CALLBACKS] = $context[AbstractNormalizer::CALLBACKS][$property];
-        }
+        $newContext[AbstractNormalizer::ATTRIBUTES] = $context[AbstractNormalizer::ATTRIBUTES][$property] ?? [];
+        $newContext[AbstractNormalizer::IGNORED_ATTRIBUTES] = $context[AbstractNormalizer::IGNORED_ATTRIBUTES][$property] ?? [];
+        $newContext[AbstractNormalizer::CALLBACKS] = $context[AbstractNormalizer::CALLBACKS][$property] ?? [];
 
         return $newContext;
     }
 
     public function denormalize(mixed $data, string $type, string $format = null, array $context = [])
     {
+        $this->applyCallbacks($data, $format, $context);
+
         return $this->doDenormalize($data, $type, $format, $context);
     }
 
@@ -95,11 +88,7 @@ abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFa
     {
         $data = $this->doNormalize($object, $format, $context);
 
-        foreach ($context[AbstractNormalizer::CALLBACKS] ?? [] as $attribute => $callback) {
-            if (is_callable($callback) && array_key_exists($attribute, $data)) {
-                $data[$attribute] = call_user_func($callback, $data[$attribute], $data, $attribute, $format, $context);
-            }
-        }
+        $this->applyCallbacks($data, $format, $context);
 
         return $data;
     }
@@ -117,6 +106,15 @@ abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFa
     public function supportsNormalization(mixed $data, string $format = null)
     {
         return $data instanceof static::$targetType;
+    }
+
+    protected function applyCallbacks(array &$data, string $format = null, array $context = [])
+    {
+        foreach ($context[AbstractNormalizer::CALLBACKS] ?? [] as $attribute => $callback) {
+            if (is_callable($callback) && array_key_exists($attribute, $data)) {
+                $data[$attribute] = call_user_func($callback, $data[$attribute], $data, $attribute, $format, $context);
+            }
+        }
     }
 
     protected abstract function doNormalize(mixed $object, ?string $format = null, array $context = []): array;
