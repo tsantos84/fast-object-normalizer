@@ -39,7 +39,7 @@ class NormalizeTest extends TestCase
             new ArrayDenormalizer(),
             new FastObjectNormalizer(
                 classGenerator: new NormalizerClassGenerator($classMetadataFactory, $discriminator),
-                classDumper: new NormalizerClassDumper(__DIR__ . '/var'),
+                classDumper: new NormalizerClassDumper(__DIR__ . '/var', true),
                 classMetadataFactory: $classMetadataFactory,
             )
         ], ['json' => new JsonEncoder()]);
@@ -71,11 +71,12 @@ class NormalizeTest extends TestCase
         $subject = $this->createDummyObject();
 
         $result = $this->serializer->normalize($subject, 'json', [
-            AbstractNormalizer::GROUPS => 'foo-group'
+            AbstractNormalizer::GROUPS => ['foo-group', 'bar-group']
         ]);
 
         $this->assertSame('foo1', $result['string']);
         $this->assertSame(1, $result['int']);
+        $this->assertSame(1.1, $result['float']);
         $this->assertArrayNotHasKey('stringWithDocBlock', $result);
     }
 

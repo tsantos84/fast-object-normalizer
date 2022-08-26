@@ -18,6 +18,8 @@ class Php80WithoutAccessors
 
     #[Groups('foo-group')]
     public int $int;
+
+    #[Groups('bar-group')]
     public float $float;
     public array $array;
     public ?self $nested = null;

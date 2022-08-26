@@ -77,8 +77,14 @@ final class NormalizerClassGenerator
         $allowedAttributes = [];
 
         foreach ($metadata->getAttributesMetadata() as $attributeMetadata) {
-            if (!$attributeMetadata->isIgnored()) {
-                $allowedAttributes[$attributeMetadata->getName()] = true;
+            if ($attributeMetadata->isIgnored()) {
+                continue;
+            }
+
+            $allowedAttributes['*'][$attributeMetadata->getName()] = true;
+
+            foreach ($attributeMetadata->getGroups() as $group) {
+                $allowedAttributes[$group][$attributeMetadata->getName()] = true;
             }
         }
 
@@ -86,7 +92,7 @@ final class NormalizerClassGenerator
             ->addProperty('allowedAttributes', $allowedAttributes)
             ->setType('array')
             ->setStatic()
-            ->setPrivate();
+            ->setProtected();
     }
 
     private function buildNormalizeMethod(ClassType $class, ClassMetadataInterface $metadata): void
@@ -98,7 +104,7 @@ final class NormalizerClassGenerator
         $normalizeMethod->addParameter('format', null)->setType('string');
         $normalizeMethod->addParameter('context', [])->setType('array');
 
-        $bodyLines = ['$allowedAttributes = $context[\'allowed_attributes\'][\''.$metadata->getName().'\'] ?? self::$allowedAttributes;'];
+        $bodyLines = ['$allowedAttributes = $this->getAllowedAttributes($context);'];
         $bodyLines[] = '$data = [];';
 
         if (null !== $discriminatorProperty && null !== $discriminatorValue) {
@@ -150,7 +156,7 @@ final class NormalizerClassGenerator
         $denormalize->addParameter('context', [])->setType('array');
 
         $bodyLines = ['$object = $context[\''.AbstractNormalizer::OBJECT_TO_POPULATE.'\'] ?? $this->newInstance($data, $format, $context);'];
-        $bodyLines[] = '$allowedAttributes = $context[\'allowed_attributes\'][\''.$metadata->getName().'\'] ?? self::$allowedAttributes;';
+        $bodyLines[] = '$allowedAttributes = $this->getAllowedAttributes($context);';
 
         foreach ($metadata->getAttributesMetadata() as $property) {
             if ($property->isIgnored()) {

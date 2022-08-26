@@ -38,10 +38,6 @@ final class FastObjectNormalizer extends AbstractNormalizer implements Normalize
     {
         $denormalizer = $this->getNormalizer($type);
 
-        if (false !== $attributes = $this->getAllowedAttributes($type, $context, true)) {
-            $context['allowed_attributes'][$type] = array_flip($attributes);
-        }
-
         return $denormalizer->denormalize($data, $type, $format, $context);
     }
 
@@ -57,10 +53,6 @@ final class FastObjectNormalizer extends AbstractNormalizer implements Normalize
         }
 
         $normalizer = $this->getNormalizer($object);
-
-        if (false !== $attributes = $this->getAllowedAttributes($object, $context, true)) {
-            $context['allowed_attributes'][get_class($object)] = array_flip($attributes);
-        }
 
         return $normalizer->normalize($object, $format, $context);
     }
