@@ -10,7 +10,7 @@ use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\SerializerAwareInterface;
 use Symfony\Component\Serializer\SerializerAwareTrait;
 
-final class SuperFastObjectNormalizer extends AbstractNormalizer implements NormalizerInterface, SerializerAwareInterface
+final class FastObjectNormalizer extends AbstractNormalizer implements NormalizerInterface, SerializerAwareInterface
 {
     use SerializerAwareTrait;
 

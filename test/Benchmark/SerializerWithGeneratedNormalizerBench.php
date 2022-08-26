@@ -16,7 +16,7 @@ use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 use Symfony\Component\Serializer\Normalizer\DateTimeZoneNormalizer;
 use Symfony\Component\Serializer\Normalizer\UidNormalizer;
 use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassDumper;
-use Tsantos\Symfony\Serializer\Normalizer\SuperFastObjectNormalizer;
+use Tsantos\Symfony\Serializer\Normalizer\FastObjectNormalizer;
 use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassGenerator;
 
 final class SerializerWithGeneratedNormalizerBench extends AbstractBench
@@ -31,7 +31,7 @@ final class SerializerWithGeneratedNormalizerBench extends AbstractBench
             new UidNormalizer(),
             new DateTimeZoneNormalizer(),
             new ArrayDenormalizer(),
-            new SuperFastObjectNormalizer(
+            new FastObjectNormalizer(
                 classGenerator: new NormalizerClassGenerator($classMetadataFactory, $discriminator),
                 classDumper: new NormalizerClassDumper(__DIR__ . '/../var'),
                 classMetadataFactory: $classMetadataFactory,

@@ -13,7 +13,7 @@ use Symfony\Component\Serializer\Mapping\Loader\AnnotationLoader;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
 use Symfony\Component\Serializer\Serializer;
 use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassDumper;
-use Tsantos\Symfony\Serializer\Normalizer\SuperFastObjectNormalizer;
+use Tsantos\Symfony\Serializer\Normalizer\FastObjectNormalizer;
 use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassGenerator;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyA;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyInterface;
@@ -37,7 +37,7 @@ final class DenormalizeTest extends TestCase
 
         $this->serializer = new Serializer([
             new ArrayDenormalizer(),
-            new SuperFastObjectNormalizer(
+            new FastObjectNormalizer(
                 classGenerator: new NormalizerClassGenerator($classMetadataFactory, $discriminator),
                 classDumper: new NormalizerClassDumper(__DIR__ . '/var'),
                 classMetadataFactory: $classMetadataFactory,

@@ -55,7 +55,7 @@ final class NormalizerClassGenerator
         $class = $phpFile
             ->addClass($config->normalizerClassName)
             ->setFinal()
-            ->setExtends(\Tsantos\Symfony\Serializer\Normalizer\AbstractNormalizer::class)
+            ->setExtends(\Tsantos\Symfony\Serializer\Normalizer\AbstractObjectNormalizer::class)
             ->addComment('Auto-generated class! Do not change it by yourself.');
 
         $class

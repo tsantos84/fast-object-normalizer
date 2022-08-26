@@ -11,7 +11,7 @@ use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
 use Symfony\Component\Serializer\Serializer;
 use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassGenerator;
 use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassDumper;
-use Tsantos\Symfony\Serializer\Normalizer\SuperFastObjectNormalizer;
+use Tsantos\Symfony\Serializer\Normalizer\FastObjectNormalizer;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithConstructor;
 use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\Php80WithoutAccessors;
 
@@ -22,7 +22,7 @@ $discriminator = new ClassDiscriminatorFromClassMetadata($classMetadataFactory);
 
 $serializer = new Serializer([
     new ArrayDenormalizer(),
-    new SuperFastObjectNormalizer(
+    new FastObjectNormalizer(
         classGenerator: new NormalizerClassGenerator($classMetadataFactory, $discriminator),
         classDumper: new NormalizerClassDumper(__DIR__ . '/var', false),
         classMetadataFactory: $classMetadataFactory,

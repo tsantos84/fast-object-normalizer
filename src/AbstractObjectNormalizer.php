@@ -6,14 +6,14 @@ namespace Tsantos\Symfony\Serializer\Normalizer;
 
 use Symfony\Component\Serializer\Serializer;
 
-abstract class AbstractNormalizer implements NormalizerInterface, ObjectFactoryInterface
+abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFactoryInterface
 {
     protected static string $targetType;
     protected readonly \ReflectionClass $refClass;
 
     public function __construct(
-        protected readonly Serializer                $serializer,
-        protected readonly SuperFastObjectNormalizer $normalizer,
+        protected readonly Serializer           $serializer,
+        protected readonly FastObjectNormalizer $normalizer,
     ) {
         $this->refClass = new \ReflectionClass(static::$targetType);
     }
