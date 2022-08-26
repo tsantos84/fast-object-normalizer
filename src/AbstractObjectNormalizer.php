@@ -69,12 +69,12 @@ abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFa
 
     protected function createChildContext(string $property, array $context = []): array
     {
-        $newContext = $context;
-        $newContext[AbstractNormalizer::ATTRIBUTES] = $context[AbstractNormalizer::ATTRIBUTES][$property] ?? [];
-        $newContext[AbstractNormalizer::IGNORED_ATTRIBUTES] = $context[AbstractNormalizer::IGNORED_ATTRIBUTES][$property] ?? [];
-        $newContext[AbstractNormalizer::CALLBACKS] = $context[AbstractNormalizer::CALLBACKS][$property] ?? [];
+        $childContext = $context;
+        $childContext[AbstractNormalizer::ATTRIBUTES] = $context[AbstractNormalizer::ATTRIBUTES][$property] ?? [];
+        $childContext[AbstractNormalizer::IGNORED_ATTRIBUTES] = $context[AbstractNormalizer::IGNORED_ATTRIBUTES][$property] ?? [];
+        $childContext[AbstractNormalizer::CALLBACKS] = $context[AbstractNormalizer::CALLBACKS][$property] ?? [];
 
-        return $newContext;
+        return $childContext;
     }
 
     public function denormalize(mixed $data, string $type, string $format = null, array $context = [])
