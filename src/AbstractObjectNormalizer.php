@@ -49,7 +49,11 @@ abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFa
         if (isset($context[AbstractNormalizer::IGNORED_ATTRIBUTES])) {
             $filtered = [];
             foreach ((array)$context[AbstractNormalizer::IGNORED_ATTRIBUTES] as $key => $attribute) {
-                $filtered[] = is_array($attribute) ? $key : $attribute;
+                // allowing nested object to be de-normalized
+                if (is_array($attribute) && !empty($attribute)) {
+                    continue;
+                }
+                $filtered[] = is_array($attribute) && !empty($attribute) ? $key : $attribute;
             }
             $attributes = array_diff_key($attributes, array_flip($filtered));
         }

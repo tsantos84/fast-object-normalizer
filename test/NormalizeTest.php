@@ -105,9 +105,14 @@ class NormalizeTest extends TestCase
     {
         $subject = $this->createDummyObject();
         $result = $this->serializer->normalize($subject, 'json', [
-            AbstractNormalizer::IGNORED_ATTRIBUTES => 'string'
+            AbstractNormalizer::IGNORED_ATTRIBUTES => ['string', 'objectCollection' => ['foo']]
         ]);
         $this->assertArrayNotHasKey('string', $result);
+
+        // assert nested attributes
+        $this->assertArrayHasKey('objectCollection', $result);
+        $this->assertArrayNotHasKey('foo', $result['objectCollection'][0]);
+        $this->assertArrayHasKey('bar', $result['objectCollection'][0]);
     }
 
     public function testNormalizeCircularReference(): void
