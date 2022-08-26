@@ -32,5 +32,8 @@
             "name": "tsantos",
             "email": "tales.augusto.santos@gmail.com"
         }
-    ]
+    ],
+    "config": {
+        "bin-dir": "./bin"
+    }
 }
