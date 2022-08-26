@@ -38,7 +38,11 @@ abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFa
         }
 
         if (isset($context[AbstractNormalizer::ATTRIBUTES])) {
-            $attributes = array_intersect_key($attributes, array_flip($context[AbstractNormalizer::ATTRIBUTES]));
+            $attributes = array_intersect_key($attributes, array_flip((array) $context[AbstractNormalizer::ATTRIBUTES]));
+        }
+
+        if (isset($context[AbstractNormalizer::IGNORED_ATTRIBUTES])) {
+            $attributes = array_diff_key($attributes, array_flip((array) $context[AbstractNormalizer::IGNORED_ATTRIBUTES]));
         }
 
         return $attributes;

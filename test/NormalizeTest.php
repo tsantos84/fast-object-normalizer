@@ -100,6 +100,15 @@ class NormalizeTest extends TestCase
         $this->assertArrayNotHasKey('ignored', $result);
     }
 
+    public function testNormalizeWithIgnoreAttributeOnContext(): void
+    {
+        $subject = $this->createDummyObject();
+        $result = $this->serializer->normalize($subject, 'json', [
+            AbstractNormalizer::IGNORED_ATTRIBUTES => 'string'
+        ]);
+        $this->assertArrayNotHasKey('string', $result);
+    }
+
     public function testNormalizeCircularReference(): void
     {
         $this->expectException(CircularReferenceException::class);
