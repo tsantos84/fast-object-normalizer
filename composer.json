@@ -37,6 +37,7 @@
         "bin-dir": "./bin"
     },
     "scripts": {
+        "lint:fix": "php-cs-fixer fix --allow-risky=yes",
         "benchmark": "@php -dmemory_limit=-1 vendor/bin/phpbench run test/Benchmark/ --report=default --report=tsantos",
         "test": "phpunit -c phpunit.xml.dist"
     }
