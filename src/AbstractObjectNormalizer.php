@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the Tsantos Object Normalizer package.
+ * This file is part of the TSantos Fast Object Normalizer package.
  * (c) Tales Santos <tales.augusto.santos@gmail.com>
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Tsantos\Symfony\Serializer\Normalizer;
+namespace TSantos\FastObjectNormalizer;
 
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\Serializer;
@@ -111,13 +111,13 @@ abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFa
     protected function applyCallbacks(array &$data, string $format = null, array $context = [])
     {
         foreach ($context[AbstractNormalizer::CALLBACKS] ?? [] as $attribute => $callback) {
-            if (is_callable($callback) && array_key_exists($attribute, $data)) {
-                $data[$attribute] = call_user_func($callback, $data[$attribute], $data, $attribute, $format, $context);
+            if (\is_callable($callback) && \array_key_exists($attribute, $data)) {
+                $data[$attribute] = \call_user_func($callback, $data[$attribute], $data, $attribute, $format, $context);
             }
         }
     }
 
-    protected abstract function doNormalize(mixed $object, ?string $format = null, array $context = []): array;
+    abstract protected function doNormalize(mixed $object, string $format = null, array $context = []): array;
 
-    protected abstract function doDenormalize(array $data, string $type, string $format = null, array $context = []): object;
+    abstract protected function doDenormalize(array $data, string $type, string $format = null, array $context = []): object;
 }

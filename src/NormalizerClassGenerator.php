@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the Tsantos Object Normalizer package.
+ * This file is part of the TSantos Fast Object Normalizer package.
  * (c) Tales Santos <tales.augusto.santos@gmail.com>
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Tsantos\Symfony\Serializer\Normalizer;
+namespace TSantos\FastObjectNormalizer;
 
 use Nette\PhpGenerator\ClassType;
 use Nette\PhpGenerator\PhpFile;
@@ -61,7 +61,7 @@ final class NormalizerClassGenerator
         $class = $phpFile
             ->addClass($config->normalizerClassName)
             ->setFinal()
-            ->setExtends(\Tsantos\Symfony\Serializer\Normalizer\AbstractObjectNormalizer::class)
+            ->setExtends(\TSantos\FastObjectNormalizer\AbstractObjectNormalizer::class)
             ->addComment('Auto-generated class! Do not change it by yourself.');
 
         $class

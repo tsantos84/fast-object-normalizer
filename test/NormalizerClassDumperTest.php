@@ -3,21 +3,21 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the Tsantos Object Normalizer package.
+ * This file is part of the TSantos Fast Object Normalizer package.
  * (c) Tales Santos <tales.augusto.santos@gmail.com>
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Tsantos\Test\Symfony\Serializer\Normalizer;
+namespace TSantos\Test\FastObjectNormalizer;
 
 use Nette\PhpGenerator\PhpFile;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Filesystem;
-use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassConfig;
-use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassDumper;
-use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyA;
-use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyB;
+use TSantos\FastObjectNormalizer\NormalizerClassConfig;
+use TSantos\FastObjectNormalizer\NormalizerClassDumper;
+use TSantos\Test\FastObjectNormalizer\Fixtures\DummyA;
+use TSantos\Test\FastObjectNormalizer\Fixtures\DummyB;
 
 /**
  * @runTestsInSeparateProcesses

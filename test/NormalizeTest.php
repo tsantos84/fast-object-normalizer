@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the Tsantos Object Normalizer package.
+ * This file is part of the TSantos Fast Object Normalizer package.
  * (c) Tales Santos <tales.augusto.santos@gmail.com>
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Tsantos\Test\Symfony\Serializer\Normalizer;
+namespace TSantos\Test\FastObjectNormalizer;
 
 use Doctrine\Common\Annotations\AnnotationReader;
 use PHPUnit\Framework\TestCase;
@@ -21,13 +21,13 @@ use Symfony\Component\Serializer\Mapping\Loader\AnnotationLoader;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
 use Symfony\Component\Serializer\Serializer;
-use Tsantos\Symfony\Serializer\Normalizer\FastObjectNormalizer;
-use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassDumper;
-use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassGenerator;
-use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyA;
-use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithConstructor;
-use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithPrivateAttribute;
-use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\Php80WithoutAccessors;
+use TSantos\FastObjectNormalizer\FastObjectNormalizer;
+use TSantos\FastObjectNormalizer\NormalizerClassDumper;
+use TSantos\FastObjectNormalizer\NormalizerClassGenerator;
+use TSantos\Test\FastObjectNormalizer\Fixtures\DummyA;
+use TSantos\Test\FastObjectNormalizer\Fixtures\DummyWithConstructor;
+use TSantos\Test\FastObjectNormalizer\Fixtures\DummyWithPrivateAttribute;
+use TSantos\Test\FastObjectNormalizer\Fixtures\Php80WithoutAccessors;
 
 class NormalizeTest extends TestCase
 {
@@ -148,15 +148,15 @@ class NormalizeTest extends TestCase
 
     public function testNormalizeAttributeWithCallback(): void
     {
-        $toUpper = fn(string $value): string => strtoupper($value);
+        $toUpper = fn (string $value): string => strtoupper($value);
         $subject = $this->createDummyObject();
         $result = $this->serializer->normalize($subject, null, [
             AbstractNormalizer::CALLBACKS => [
                 'string' => $toUpper,
                 'objectCollection' => [
-                    'foo' => $toUpper
-                ]
-            ]
+                    'foo' => $toUpper,
+                ],
+            ],
         ]);
         $this->assertArrayHasKey('string', $result);
         $this->assertSame('FOO1', $result['string']);

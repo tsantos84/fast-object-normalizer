@@ -3,23 +3,23 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the Tsantos Object Normalizer package.
+ * This file is part of the TSantos Fast Object Normalizer package.
  * (c) Tales Santos <tales.augusto.santos@gmail.com>
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
-namespace Tsantos\Test\Symfony\Serializer\Normalizer\Benchmark;
+namespace TSantos\Test\FastObjectNormalizer\Benchmark;
 
 use PhpBench\Attributes\Iterations;
 use PhpBench\Attributes\ParamProviders;
 use PhpBench\Attributes\Warmup;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Serializer;
-use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyInterface;
-use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithConstructor;
-use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithPrivateAttribute;
-use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\Php80WithAccessors;
+use TSantos\Test\FastObjectNormalizer\Fixtures\DummyInterface;
+use TSantos\Test\FastObjectNormalizer\Fixtures\DummyWithConstructor;
+use TSantos\Test\FastObjectNormalizer\Fixtures\DummyWithPrivateAttribute;
+use TSantos\Test\FastObjectNormalizer\Fixtures\Php80WithAccessors;
 
 abstract class AbstractBench
 {

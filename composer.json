@@ -1,7 +1,13 @@
 {
-    "name": "tsantos/symfony-generated-normalizer",
+    "name": "tsantos/fast-object-normalizer",
     "description": "Generate dedicated normalizers for your objects to increase serialization performance",
     "type": "library",
+    "authors": [
+        {
+            "name": "Tales Santos",
+            "email": "tales.augusto.santos@gmail.com"
+        }
+    ],
     "require": {
         "php": ">8.1",
         "symfony/serializer": "^6.1",
@@ -19,26 +25,20 @@
     "license": "MIT",
     "autoload": {
         "psr-4": {
-            "Tsantos\\Symfony\\Serializer\\Normalizer\\": "src/"
+            "TSantos\\FastObjectNormalizer\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Tsantos\\Test\\Symfony\\Serializer\\Normalizer\\": "test/"
+            "TSantos\\Test\\FastObjectNormalizer\\": "test/"
         }
     },
-    "authors": [
-        {
-            "name": "tsantos",
-            "email": "tales.augusto.santos@gmail.com"
-        }
-    ],
     "config": {
         "bin-dir": "./bin"
     },
     "scripts": {
         "lint:fix": "php-cs-fixer fix --allow-risky=yes",
-        "benchmark": "@php -dmemory_limit=-1 vendor/bin/phpbench run test/Benchmark/ --report=default --report=tsantos",
+        "benchmark": "@php -dmemory_limit=-1 vendor/bin/phpbench run test/Benchmark/ --report=tsantos",
         "test": "phpunit -c phpunit.xml.dist"
     }
 }

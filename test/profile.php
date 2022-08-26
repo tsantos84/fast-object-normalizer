@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of the Tsantos Object Normalizer package.
+ * This file is part of the TSantos Fast Object Normalizer package.
  * (c) Tales Santos <tales.augusto.santos@gmail.com>
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -16,11 +16,11 @@ use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactory;
 use Symfony\Component\Serializer\Mapping\Loader\AnnotationLoader;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
 use Symfony\Component\Serializer\Serializer;
-use Tsantos\Symfony\Serializer\Normalizer\FastObjectNormalizer;
-use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassDumper;
-use Tsantos\Symfony\Serializer\Normalizer\NormalizerClassGenerator;
-use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\DummyWithConstructor;
-use Tsantos\Test\Symfony\Serializer\Normalizer\Fixtures\Php80WithoutAccessors;
+use TSantos\FastObjectNormalizer\FastObjectNormalizer;
+use TSantos\FastObjectNormalizer\NormalizerClassDumper;
+use TSantos\FastObjectNormalizer\NormalizerClassGenerator;
+use TSantos\Test\FastObjectNormalizer\Fixtures\DummyWithConstructor;
+use TSantos\Test\FastObjectNormalizer\Fixtures\Php80WithoutAccessors;
 
 require __DIR__.'/../vendor/autoload.php';
 
