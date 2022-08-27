@@ -93,7 +93,7 @@ abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFa
 
         if ($context[SfAbstractObjectNormalizer::SKIP_NULL_VALUES] ?? false) {
             foreach ($data as $key => $value) {
-                if (is_null($value)) {
+                if (null === $value) {
                     unset($data[$key]);
                 }
             }
