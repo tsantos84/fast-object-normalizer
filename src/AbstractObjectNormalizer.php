@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace TSantos\FastObjectNormalizer;
 
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer as SfAbstractObjectNormalizer;
 use Symfony\Component\Serializer\Serializer;
 
 abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFactoryInterface
@@ -89,6 +90,14 @@ abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFa
         $data = $this->doNormalize($object, $format, $context);
 
         $this->applyCallbacks($data, $format, $context);
+
+        if ($context[SfAbstractObjectNormalizer::SKIP_NULL_VALUES] ?? false) {
+            foreach ($data as $key => $value) {
+                if (is_null($value)) {
+                    unset($data[$key]);
+                }
+            }
+        }
 
         return $data;
     }

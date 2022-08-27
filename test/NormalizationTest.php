@@ -19,7 +19,9 @@ use Symfony\Component\Serializer\Mapping\ClassDiscriminatorFromClassMetadata;
 use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactory;
 use Symfony\Component\Serializer\Mapping\Loader\AnnotationLoader;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
 use Symfony\Component\Serializer\Normalizer\ArrayDenormalizer;
+use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 use Symfony\Component\Serializer\Serializer;
 use TSantos\FastObjectNormalizer\FastObjectNormalizer;
 use TSantos\FastObjectNormalizer\NormalizerClassDumper;
@@ -29,7 +31,7 @@ use TSantos\Test\FastObjectNormalizer\Fixtures\DummyWithConstructor;
 use TSantos\Test\FastObjectNormalizer\Fixtures\DummyWithPrivateAttribute;
 use TSantos\Test\FastObjectNormalizer\Fixtures\Php80WithoutAccessors;
 
-class NormalizeTest extends TestCase
+class NormalizationTest extends TestCase
 {
     private Serializer $serializer;
 
@@ -59,6 +61,16 @@ class NormalizeTest extends TestCase
         $this->assertSame(['foo' => 'bar'], $result['array']);
         $this->assertSame([['foo' => 'foo', 'bar' => 'bar']], $result['objectCollection']);
         $this->assertSame([1, 2, 3], $result['intCollection']);
+        $this->assertNull($result['nullable']);
+    }
+
+    public function testNormalizeSkipingNullValues(): void
+    {
+        $subject = $this->createDummyObject();
+        $result = $this->serializer->normalize($subject, 'json', [
+            AbstractObjectNormalizer::SKIP_NULL_VALUES => true
+        ]);
+        $this->assertArrayNotHasKey('nullable', $result);
     }
 
     public function testNormalizePrivateAttributes(): void

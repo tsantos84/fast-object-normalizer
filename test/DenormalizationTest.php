@@ -30,7 +30,7 @@ use TSantos\Test\FastObjectNormalizer\Fixtures\DummyWithConstructor;
 use TSantos\Test\FastObjectNormalizer\Fixtures\DummyWithPrivateAttribute;
 use TSantos\Test\FastObjectNormalizer\Fixtures\Php80WithoutAccessors;
 
-final class DenormalizeTest extends TestCase
+final class DenormalizationTest extends TestCase
 {
     private Serializer $serializer;
 
