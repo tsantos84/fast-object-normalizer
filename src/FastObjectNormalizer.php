@@ -76,6 +76,10 @@ final class FastObjectNormalizer extends AbstractNormalizer implements Normalize
 
     private function supportType(string $type): bool
     {
+        if (isset(self::SCALAR_TYPES[$type])) {
+            return false;
+        }
+
         foreach ($this->includedTypes as $include) {
             if (preg_match('/'.$include.'/', $type) > 0) {
                 return true;
