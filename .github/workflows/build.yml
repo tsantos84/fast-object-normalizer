@@ -32,5 +32,8 @@ jobs:
       - name: Run lint
         run: composer lint
 
-      - name: Run benchmark
-        run: composer benchmark
+      - name: Run benchmark normalization
+        run: composer benchmark -- --group=normalization
+
+      - name: Run benchmark denormalization
+      run: composer benchmark -- --group=denormalization
