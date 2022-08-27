@@ -36,4 +36,4 @@ jobs:
         run: composer benchmark -- --group=normalization
 
       - name: Run benchmark denormalization
-      run: composer benchmark -- --group=denormalization
+        run: composer benchmark -- --group=denormalization
