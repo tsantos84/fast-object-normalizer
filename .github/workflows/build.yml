@@ -1,16 +1,13 @@
 name: Build
 
-on:
-  push: ~
+on: [push]
 
 permissions:
   contents: read
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v3
 
@@ -29,11 +26,11 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
 
-     - name: Run test suite
-       run: composer test
+      - name: Run test suite
+        run: composer test
 
-     - name: Run lint
-       run: composer lint
+      - name: Run lint
+        run: composer lint
 
-     - name: Run benchmark
-       run: composer benchmark
+      - name: Run benchmark
+        run: composer benchmark
