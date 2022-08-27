@@ -23,7 +23,7 @@ use TSantos\FastObjectNormalizer\FastObjectNormalizer;
 use TSantos\FastObjectNormalizer\NormalizerClassDumper;
 use TSantos\FastObjectNormalizer\NormalizerClassGenerator;
 
-final class SerializerWithGeneratedNormalizerBench extends AbstractBench
+final class FastObjectNormalizerBench extends AbstractBench
 {
     public function getNormalizers(): array
     {
