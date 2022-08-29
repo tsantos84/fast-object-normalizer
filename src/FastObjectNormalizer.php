@@ -67,11 +67,11 @@ final class FastObjectNormalizer extends AbstractNormalizer implements Normalize
 
     public function supportsNormalization(mixed $data, string $format = null)
     {
-        if (!is_object($data) || $data instanceof \Iterator) {
+        if (!\is_object($data) || $data instanceof \Iterator) {
             return false;
         }
 
-        return $this->supportType(get_class($data));
+        return $this->supportType(\get_class($data));
     }
 
     private function supportType(string $type): bool

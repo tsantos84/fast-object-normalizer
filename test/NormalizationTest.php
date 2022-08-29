@@ -67,7 +67,7 @@ class NormalizationTest extends TestCase
     {
         $subject = $this->createDummyObject();
         $result = $this->serializer->normalize($subject, 'json', [
-            AbstractObjectNormalizer::SKIP_NULL_VALUES => true
+            AbstractObjectNormalizer::SKIP_NULL_VALUES => true,
         ]);
         $this->assertArrayNotHasKey('nullable', $result);
     }

@@ -38,7 +38,8 @@
     },
     "scripts": {
         "lint:fix": "php-cs-fixer fix --allow-risky=yes",
-        "benchmark": "@php -dmemory_limit=-1 vendor/bin/phpbench run test/Benchmark/ --report=tsantos",
+        "lint": "php-cs-fixer fix --allow-risky=yes --dry-run --diff",
+        "benchmark": "@php -dmemory_limit=-1 bin/phpbench run test/Benchmark/ --report=tsantos --progress=none",
         "test": "phpunit -c phpunit.xml.dist"
     }
 }

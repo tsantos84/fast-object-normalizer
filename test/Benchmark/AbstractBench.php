@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace TSantos\Test\FastObjectNormalizer\Benchmark;
 
+use PhpBench\Attributes\Groups;
 use PhpBench\Attributes\Iterations;
 use PhpBench\Attributes\ParamProviders;
 use PhpBench\Attributes\Warmup;
@@ -35,6 +36,7 @@ abstract class AbstractBench
     #[Iterations(5)]
     #[Warmup(1)]
     #[ParamProviders('generateObjects')]
+    #[Groups(['normalization'])]
     public function benchNormalize(array $data): void
     {
         $this->serializer->normalize($data);
@@ -43,6 +45,7 @@ abstract class AbstractBench
     #[Iterations(5)]
     #[Warmup(1)]
     #[ParamProviders('generateObjects')]
+    #[Groups(['normalization'])]
     public function benchNormalizeWithGroups(array $data): void
     {
         $this->serializer->normalize($data, 'json', [
@@ -53,6 +56,7 @@ abstract class AbstractBench
     #[Iterations(5)]
     #[Warmup(1)]
     #[ParamProviders('generateNormalizedData')]
+    #[Groups(['denormalization'])]
     public function benchDenormalize(array $data): void
     {
         $this->serializer->denormalize($data, Php80WithAccessors::class);
@@ -61,6 +65,7 @@ abstract class AbstractBench
     #[Iterations(5)]
     #[Warmup(1)]
     #[ParamProviders('generateDenormalizedDataWithPrivateProperties')]
+    #[Groups(['normalization'])]
     public function benchNormalizePrivateProperties(array $data): void
     {
         $this->serializer->normalize($data, 'json');
@@ -69,6 +74,7 @@ abstract class AbstractBench
     #[Iterations(5)]
     #[Warmup(1)]
     #[ParamProviders('generateDataForDummyInterface')]
+    #[Groups(['denormalization'])]
     public function benchDenormalizeInterface(array $data): void
     {
         foreach ($data as $row) {

@@ -21,7 +21,7 @@ use Symfony\Component\Serializer\Normalizer\DateTimeZoneNormalizer;
 use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 use Symfony\Component\Serializer\Normalizer\UidNormalizer;
 
-final class SerializerWithObjectNormalizerBench extends AbstractBench
+final class ObjectNormalizerBench extends AbstractBench
 {
     public function getNormalizers(): array
     {
