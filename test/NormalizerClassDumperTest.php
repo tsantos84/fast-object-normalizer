@@ -11,7 +11,6 @@ declare(strict_types=1);
 
 namespace TSantos\Test\FastObjectNormalizer;
 
-use Nette\PhpGenerator\PhpFile;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Filesystem;
 use TSantos\FastObjectNormalizer\NormalizerClassConfig;

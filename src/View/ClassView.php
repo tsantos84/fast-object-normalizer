@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+/*
+ * This file is part of the TSantos Fast Object Normalizer package.
+ * (c) Tales Santos <tales.augusto.santos@gmail.com>
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace TSantos\FastObjectNormalizer\View;
 
 class ClassView
@@ -17,9 +24,9 @@ class ClassView
     public function __construct(public string $className, public string $targetClassName, public string $targetClassShortName)
     {
         $namespace = explode('\\', ltrim($this->className, '\\'));
-        if (count($namespace) > 1) {
+        if (\count($namespace) > 1) {
             array_shift($namespace);
-            $this->namespace = join('\\', $namespace);
+            $this->namespace = implode('\\', $namespace);
         }
     }
 

@@ -23,8 +23,8 @@ use Symfony\Component\Serializer\Mapping\ClassDiscriminatorResolverInterface;
 use Symfony\Component\Serializer\Mapping\ClassMetadataInterface;
 use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactoryInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
-use TSantos\FastObjectNormalizer\View\ClassView;
 use TSantos\FastObjectNormalizer\View\AttributeView;
+use TSantos\FastObjectNormalizer\View\ClassView;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
 
@@ -35,7 +35,7 @@ final class NormalizerClassGenerator
     public function __construct(
         readonly private ClassMetadataFactoryInterface $metadataFactory,
         readonly private ?ClassDiscriminatorResolverInterface $classDiscriminatorResolver = null,
-        readonly private Environment $twig = new Environment(new FilesystemLoader(__DIR__ . '/Resources/view'), [
+        readonly private Environment $twig = new Environment(new FilesystemLoader(__DIR__.'/Resources/view'), [
             'strict_variables' => true,
         ]),
     ) {
@@ -93,8 +93,8 @@ final class NormalizerClassGenerator
                     foreach ($types as $type) {
                         $attributeView->type = $type->getBuiltinType();
                         $attributeView->isNullable = $type->isNullable();
-                        $attributeView->isScalarType = in_array($type->getBuiltinType(), [
-                            'int', 'string', 'bool', 'float', 'double'
+                        $attributeView->isScalarType = \in_array($type->getBuiltinType(), [
+                            'int', 'string', 'bool', 'float', 'double',
                         ]);
 
                         if (!$attributeView->isScalarType) {
@@ -146,8 +146,8 @@ final class NormalizerClassGenerator
             foreach ($types as $type) {
                 $attrView->type = $type->getBuiltinType();
                 $attrView->isNullable = $type->isNullable();
-                $attrView->isScalarType = in_array($type->getBuiltinType(), [
-                    'int', 'string', 'bool', 'float', 'double'
+                $attrView->isScalarType = \in_array($type->getBuiltinType(), [
+                    'int', 'string', 'bool', 'float', 'double',
                 ]);
 
                 if (!$attrView->isScalarType) {
@@ -173,7 +173,7 @@ final class NormalizerClassGenerator
         }
 
         return $this->twig->render('class.php.twig', [
-            'classView' => $classView
+            'classView' => $classView,
         ]);
 
 //

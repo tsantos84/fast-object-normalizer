@@ -11,8 +11,6 @@ declare(strict_types=1);
 
 namespace TSantos\FastObjectNormalizer;
 
-use Nette\PhpGenerator\PhpFile;
-
 final class NormalizerClassDumper
 {
     public function __construct(
