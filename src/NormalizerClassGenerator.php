@@ -34,7 +34,7 @@ final class NormalizerClassGenerator
     public function __construct(
         readonly private ClassMetadataFactoryInterface $metadataFactory,
         readonly private ?ClassDiscriminatorResolverInterface $classDiscriminatorResolver = null,
-        ?Environment $twig = null,
+        Environment $twig = null,
     ) {
         // a full list of extractors is shown further below
         $phpDocExtractor = new PhpDocExtractor();
