@@ -51,7 +51,11 @@ final class FastObjectNormalizer extends AbstractNormalizer implements Normalize
 
     public function supportsDenormalization(mixed $data, string $type, string $format = null)
     {
-        return $this->supportType($type);
+        if (!$this->supportType($type)) {
+            return false;
+        }
+
+        return $this->getNormalizer($type)->supportsDenormalization($data, $type, $format);
     }
 
     public function normalize(mixed $object, string $format = null, array $context = [])
@@ -67,16 +71,20 @@ final class FastObjectNormalizer extends AbstractNormalizer implements Normalize
 
     public function supportsNormalization(mixed $data, string $format = null)
     {
-        if (!\is_object($data) || $data instanceof \Iterator) {
+        if (!is_object($data) || $data instanceof \Iterator) {
             return false;
         }
 
-        return $this->supportType(\get_class($data));
+        if (!$this->supportType(get_class($data))) {
+            return false;
+        }
+
+        return $this->getNormalizer(get_class($data))->supportsNormalization($data, $format);
     }
 
     private function supportType(string $type): bool
     {
-        if (isset(self::SCALAR_TYPES[$type])) {
+        if (isset(self::SCALAR_TYPES[$type]) || str_ends_with($type, '[]')) {
             return false;
         }
 
