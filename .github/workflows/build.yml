@@ -27,7 +27,7 @@ jobs:
         run: composer install --prefer-dist --no-progress
 
       - name: Run test suite
-        run: composer test
+        run: composer test:coverage
 
       - name: Run lint
         run: composer lint
