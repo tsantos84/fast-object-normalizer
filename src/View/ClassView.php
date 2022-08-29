@@ -21,7 +21,7 @@ class ClassView
     public ?string $discriminatorProperty;
     public array $constructorArgs = [];
 
-    public function __construct(public string $className, public string $targetClassName, public string $targetClassShortName)
+    public function __construct(public \ReflectionClass $targetRefClass, public string $className, public string $targetClassName, public string $targetClassShortName)
     {
         $namespace = explode('\\', ltrim($this->className, '\\'));
         if (\count($namespace) > 1) {
@@ -32,6 +32,7 @@ class ClassView
 
     public function add(AttributeView $propertyView): void
     {
+        $propertyView->classView = $this;
         $this->attributes[] = $propertyView;
     }
 

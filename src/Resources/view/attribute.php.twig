@@ -1,6 +1,6 @@
 {% macro read(attr) %}
         if (isset($allowedAttributes['{{ attr.name }}'])) {
-            $value = {{ attr.valueReader|raw }};
+            $value = {{ attr_accessor(attr, {':object': '$object', ':refClass': '$this->refClass'})|raw }};
             if (null !== $value) {
 {% if attr.isScalarType %}
                 $value = ({{ attr.type }}) $value;
@@ -35,14 +35,14 @@
 {% endmacro %}
 
 {% macro write(attr) %}
-{% set writer %}
+{% set mutator %}
 {% if attr.isNullable -%}
-{{ attr.valueWriter|replace({':value': '$value'})|raw }};
+{{ attr_mutator(attr, {':value': '$value', ':object': '$object', ':refClass': '$this->refClass'})|raw }};
 {%- else %}
 if (null !== $value) {
-                {{ attr.valueWriter|replace({':value': '$value'})|raw }};
+                {{ attr_mutator(attr, {':value': '$value', ':object': '$object', ':refClass': '$this->refClass'})|raw }};
             }
 {%- endif %}
 {% endset %}
-{{ _self.readNormalizedValue(attr, writer) }}
+{{ _self.readNormalizedValue(attr, mutator) }}
 {% endmacro %}

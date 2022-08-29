@@ -11,18 +11,16 @@ declare(strict_types=1);
 
 namespace TSantos\FastObjectNormalizer;
 
-use Nette\PhpGenerator\ClassType;
-use Nette\PhpGenerator\PhpFile;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractorInterface;
 use Symfony\Component\PropertyInfo\Type;
-use Symfony\Component\Serializer\Exception\NotNormalizableValueException;
+use Symfony\Component\Serializer\Mapping\AttributeMetadataInterface;
 use Symfony\Component\Serializer\Mapping\ClassDiscriminatorResolverInterface;
 use Symfony\Component\Serializer\Mapping\ClassMetadataInterface;
 use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactoryInterface;
-use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use TSantos\FastObjectNormalizer\Twig\Extension\NormalizerClassExtension;
 use TSantos\FastObjectNormalizer\View\AttributeView;
 use TSantos\FastObjectNormalizer\View\ClassView;
 use Twig\Environment;
@@ -31,13 +29,12 @@ use Twig\Loader\FilesystemLoader;
 final class NormalizerClassGenerator
 {
     private readonly PropertyInfoExtractorInterface $propertyInfo;
+    private readonly Environment $twig;
 
     public function __construct(
         readonly private ClassMetadataFactoryInterface $metadataFactory,
         readonly private ?ClassDiscriminatorResolverInterface $classDiscriminatorResolver = null,
-        readonly private Environment $twig = new Environment(new FilesystemLoader(__DIR__.'/Resources/view'), [
-            'strict_variables' => true,
-        ]),
+        ?Environment $twig = null,
     ) {
         // a full list of extractors is shown further below
         $phpDocExtractor = new PhpDocExtractor();
@@ -55,11 +52,19 @@ final class NormalizerClassGenerator
             $accessExtractors,
             $propertyInitializableExtractors
         );
+
+        if (null === $twig) {
+            $this->twig = new Environment(new FilesystemLoader(__DIR__.'/Resources/view'), [
+                'strict_variables' => true,
+            ]);
+            $this->twig->addExtension(new NormalizerClassExtension());
+        }
     }
 
     public function generate(NormalizerClassConfig $config): string
     {
         $classView = new ClassView(
+            targetRefClass: $config->refClass,
             className: $config->normalizerClassShortName,
             targetClassName: $config->subjectClassName,
             targetClassShortName: $config->refClass->getShortName()
@@ -73,14 +78,12 @@ final class NormalizerClassGenerator
             foreach ($constructor->getParameters() as $parameter) {
                 $attribute = $attributes[$parameter->getName()] ?? null;
 
-                $attributeView = new AttributeView();
-
-                // parameter is a member of the target
+                // parameter is a member of the target, we can reuse metadata attribute to build attribute view
                 if (null !== $attribute) {
                     if ($attribute->isIgnored()) {
                         continue;
                     }
-                    $attributeView->serializedName = $attribute->getSerializedName() ?? $attribute->getName();
+                    $attributeView = $this->createAttributeView($attribute, $metadata);
 
                     $types = $this->propertyInfo->getTypes($metadata->getReflectionClass()->getName(), $parameter->getName());
 
@@ -88,32 +91,8 @@ final class NormalizerClassGenerator
                         // todo what to do here?
                         continue;
                     }
-
-                    /** @var Type $type */
-                    foreach ($types as $type) {
-                        $attributeView->type = $type->getBuiltinType();
-                        $attributeView->isNullable = $type->isNullable();
-                        $attributeView->isScalarType = \in_array($type->getBuiltinType(), [
-                            'int', 'string', 'bool', 'float', 'double',
-                        ]);
-
-                        if (!$attributeView->isScalarType) {
-                            if (Type::BUILTIN_TYPE_OBJECT === $type->getBuiltinType()) {
-                                $attributeView->type = $type->getClassName();
-                            } elseif (!empty($type->getCollectionValueTypes())) {
-                                $collectionType = $type->getCollectionValueTypes()[0];
-                                $attributeView->type = ($collectionType->getClassName() ?? $collectionType->getBuiltinType()).'[]';
-                            } else {
-                                $attributeView->isScalarType = true;
-                            }
-                        }
-                        break;
-                    }
+                    $classView->constructorArgs[] = $attributeView;
                 }
-
-                $attributeView->name = $parameter->getName();
-
-                $classView->constructorArgs[] = $attributeView;
             }
         }
 
@@ -128,40 +107,7 @@ final class NormalizerClassGenerator
                 continue;
             }
 
-            $attrView = new AttributeView();
-            $attrView->name = $attribute->getName();
-            $attrView->serializedName = $attribute->getSerializedName() ?? $attribute->getName();
-            $attrView->valueReader = CodeGenerator::generateGetter($metadata->getReflectionClass(), $attribute->getName(), [
-                ':object' => '$object',
-                ':refClass' => '$this->refClass',
-            ]);
-            $attrView->valueWriter = CodeGenerator::generateSetter($metadata->getReflectionClass(), $attribute->getName(), [
-                ':object' => '$object',
-                ':refClass' => '$this->refClass',
-            ]);
-
-            $types = (array) $this->propertyInfo->getTypes($metadata->name, $attribute->name);
-
-            /** @var Type $type */
-            foreach ($types as $type) {
-                $attrView->type = $type->getBuiltinType();
-                $attrView->isNullable = $type->isNullable();
-                $attrView->isScalarType = \in_array($type->getBuiltinType(), [
-                    'int', 'string', 'bool', 'float', 'double',
-                ]);
-
-                if (!$attrView->isScalarType) {
-                    if (Type::BUILTIN_TYPE_OBJECT === $type->getBuiltinType()) {
-                        $attrView->type = $type->getClassName();
-                    } elseif (!empty($type->getCollectionValueTypes())) {
-                        $collectionType = $type->getCollectionValueTypes()[0];
-                        $attrView->type = ($collectionType->getClassName() ?? $collectionType->getBuiltinType()).'[]';
-                    } else {
-                        $attrView->isScalarType = true;
-                    }
-                }
-                break;
-            }
+            $attrView = $this->createAttributeView($attribute, $metadata);
 
             $classView->allowedAttributes['*'][$attribute->getName()] = true;
 
@@ -175,5 +121,37 @@ final class NormalizerClassGenerator
         return $this->twig->render('class.php.twig', [
             'classView' => $classView,
         ]);
+    }
+
+    private function createAttributeView(AttributeMetadataInterface $attribute, ClassMetadataInterface $metadata): AttributeView
+    {
+        $attrView = new AttributeView();
+        $attrView->name = $attribute->getName();
+        $attrView->serializedName = $attribute->getSerializedName() ?? $attribute->getName();
+
+        $types = (array) $this->propertyInfo->getTypes($metadata->name, $attribute->name);
+
+        /** @var Type $type */
+        foreach ($types as $type) {
+            $attrView->type = $type->getBuiltinType();
+            $attrView->isNullable = $type->isNullable();
+            $attrView->isScalarType = \in_array($type->getBuiltinType(), [
+                'int', 'string', 'bool', 'float', 'double',
+            ]);
+
+            if (!$attrView->isScalarType) {
+                if (Type::BUILTIN_TYPE_OBJECT === $type->getBuiltinType()) {
+                    $attrView->type = $type->getClassName();
+                } elseif (!empty($type->getCollectionValueTypes())) {
+                    $collectionType = $type->getCollectionValueTypes()[0];
+                    $attrView->type = ($collectionType->getClassName() ?? $collectionType->getBuiltinType()).'[]';
+                } else {
+                    $attrView->isScalarType = true;
+                }
+            }
+            break;
+        }
+
+        return $attrView;
     }
 }

@@ -15,9 +15,8 @@ class AttributeView
 {
     public string $name;
     public string $serializedName;
-    public string $valueReader;
-    public string $valueWriter;
     public bool $isScalarType;
     public string $type;
     public bool $isNullable;
+    public ClassView $classView;
 }
