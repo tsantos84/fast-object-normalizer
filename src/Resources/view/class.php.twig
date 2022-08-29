@@ -1,0 +1,79 @@
+{% import 'attribute.php.twig' as attr %}
+<?php
+
+declare(strict_types=1);
+
+{% apply spaceless %}
+{% if classView.namespace %}
+namespace {{ classView.namespace }};
+{% endif %}
+{% endapply %}
+
+use {{ classView.targetClassName }};
+use Symfony\Component\Serializer\Exception\NotNormalizableValueException;
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer as SfAbstractObjectNormalizer;
+use TSantos\FastObjectNormalizer\AbstractObjectNormalizer;
+
+final class {{ classView.className }} extends AbstractObjectNormalizer
+{
+    protected static string $targetType = {{ classView.targetClassShortName }}::class;
+
+    protected static array $allowedAttributes = {{ classView.dumpAllowedAttributes|raw }};
+
+    protected static array $discriminatorMapping = {{ classView.dumpDiscriminatorMapping|raw }};
+
+    protected function doNormalize(mixed $object, string $format = null, array $context = []): array
+    {
+        $allowedAttributes = $this->getAllowedAttributes($context);
+        $skipNullValues = $context[SfAbstractObjectNormalizer::SKIP_NULL_VALUES] ?? false;
+        $data = [];
+
+{% for attribute in classView.attributes %}
+{{ attr.read(attribute) }}
+{% endfor %}
+
+        return $data;
+    }
+
+    protected function doDenormalize(array $data, string $type, ?string $format = null, array $context = []): object
+    {
+        $allowedAttributes = $this->getAllowedAttributes($context);
+        $object = $context[AbstractNormalizer::OBJECT_TO_POPULATE] ?? $this->newInstance($data, $format, $context);
+
+{% for attribute in classView.attributes %}
+{{ attr.write(attribute) }}
+{% endfor %}
+
+        return $object;
+    }
+
+    public function newInstance(array $data = [], string $format = null, array $context = []): object
+    {
+{% if not classView.isAbstract %}
+{% if classView.constructorArgs is empty %}
+        return new self::$targetType();
+{% else %}
+        $allowedAttributes = $this->getAllowedAttributes($context);
+        $args = [];
+{% for arg in classView.constructorArgs %}
+{{ attr.readNormalizedValue(arg, '$args[\''~arg.name~'\'] = $value;') }}
+{% endfor %}
+        return $this->refClass->newInstanceArgs($args);
+{% endif %}
+{% else %}
+        if (!isset($data['{{ classView.discriminatorProperty }}'])) {
+            throw NotNormalizableValueException::createForUnexpectedDataType(
+                sprintf('Type property "%s" not found for the abstract object "%s".', '{{ classView.discriminatorProperty }}', '{{ classView.targetClassName }}'),
+                null,
+                ['string'],
+                isset($context['deserialization_path']) ? $context['deserialization_path'].'{{ classView.discriminatorProperty }}' : '{{ classView.discriminatorProperty }}',
+                false
+            );
+        }
+
+        $class = self::$discriminatorMapping[$data['{{ classView.discriminatorProperty }}']];
+        return $this->normalizer->getNormalizer($class)->newInstance($data, $format, $context);
+{% endif %}
+     }
+}

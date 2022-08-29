@@ -46,11 +46,9 @@ class NormalizerClassDumperTest extends TestCase
     {
         $persister = new NormalizerClassDumper($this->outputDir);
         $config = new NormalizerClassConfig(DummyA::class, $this->outputDir);
-        $phpFile = new PhpFile();
-        $phpFile->addClass($config->normalizerClassName);
         $this->assertFileDoesNotExist($config->getFilename());
         $this->assertFalse(class_exists($config->normalizerClassName, false));
-        $persister->dump($config, $phpFile, false);
+        $persister->dump($config, sprintf('<?php class %s {}', $config->normalizerClassShortName), false);
         $this->assertFileExists($config->getFilename());
         $this->assertFalse(class_exists($config->normalizerClassName, false));
     }
@@ -59,13 +57,9 @@ class NormalizerClassDumperTest extends TestCase
     {
         $persister = new NormalizerClassDumper($this->outputDir);
         $config = new NormalizerClassConfig(DummyB::class, $this->outputDir);
-        $phpFile = new PhpFile();
-        $phpFile->addClass($config->normalizerClassName);
         $this->assertFileDoesNotExist($config->getFilename());
         $this->assertFalse(class_exists($config->normalizerClassName, false));
-
-        $persister->dump($config, $phpFile);
-
+        $persister->dump($config, sprintf('<?php class %s {}', $config->normalizerClassShortName));
         $this->assertFileExists($config->getFilename());
         $this->assertTrue(class_exists($config->normalizerClassName, false));
     }

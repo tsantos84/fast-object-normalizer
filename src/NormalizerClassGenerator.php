@@ -23,6 +23,10 @@ use Symfony\Component\Serializer\Mapping\ClassDiscriminatorResolverInterface;
 use Symfony\Component\Serializer\Mapping\ClassMetadataInterface;
 use Symfony\Component\Serializer\Mapping\Factory\ClassMetadataFactoryInterface;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
+use TSantos\FastObjectNormalizer\View\ClassView;
+use TSantos\FastObjectNormalizer\View\AttributeView;
+use Twig\Environment;
+use Twig\Loader\FilesystemLoader;
 
 final class NormalizerClassGenerator
 {
@@ -31,6 +35,9 @@ final class NormalizerClassGenerator
     public function __construct(
         readonly private ClassMetadataFactoryInterface $metadataFactory,
         readonly private ?ClassDiscriminatorResolverInterface $classDiscriminatorResolver = null,
+        readonly private Environment $twig = new Environment(new FilesystemLoader(__DIR__ . '/Resources/view'), [
+            'strict_variables' => true,
+        ]),
     ) {
         // a full list of extractors is shown further below
         $phpDocExtractor = new PhpDocExtractor();
@@ -50,30 +57,146 @@ final class NormalizerClassGenerator
         );
     }
 
-    public function generate(NormalizerClassConfig $config): PhpFile
+    public function generate(NormalizerClassConfig $config): string
     {
+        $classView = new ClassView(
+            className: $config->normalizerClassShortName,
+            targetClassName: $config->subjectClassName,
+            targetClassShortName: $config->refClass->getShortName()
+        );
+
         $metadata = $this->metadataFactory->getMetadataFor($config->subjectClassName);
+        $attributes = $metadata->getAttributesMetadata();
 
-        $phpFile = new PhpFile();
-        $phpFile
-            ->setStrictTypes();
+        if ($config->refClass->hasMethod('__construct')) {
+            $constructor = $config->refClass->getConstructor();
+            foreach ($constructor->getParameters() as $parameter) {
+                $attribute = $attributes[$parameter->getName()] ?? null;
 
-        $class = $phpFile
-            ->addClass($config->normalizerClassName)
-            ->setFinal()
-            ->setExtends(\TSantos\FastObjectNormalizer\AbstractObjectNormalizer::class)
-            ->addComment('Auto-generated class! Do not change it by yourself.');
+                $attributeView = new AttributeView();
 
-        $class
-            ->addProperty('targetType', $metadata->getName())
-            ->setType('string')
-            ->setStatic()
-            ->setProtected();
+                // parameter is a member of the target
+                if (null !== $attribute) {
+                    if ($attribute->isIgnored()) {
+                        continue;
+                    }
+                    $attributeView->serializedName = $attribute->getSerializedName() ?? $attribute->getName();
 
-        $this->buildAllowedAttributes($class, $metadata);
-        $this->buildNormalizeMethod($class, $metadata);
-        $this->buildDenormalizeMethod($class, $metadata);
-        $this->buildNewInstanceMethod($class, $metadata);
+                    $types = $this->propertyInfo->getTypes($metadata->getReflectionClass()->getName(), $parameter->getName());
+
+                    if (empty($types)) {
+                        // todo what to do here?
+                        continue;
+                    }
+
+                    /** @var Type $type */
+                    foreach ($types as $type) {
+                        $attributeView->type = $type->getBuiltinType();
+                        $attributeView->isNullable = $type->isNullable();
+                        $attributeView->isScalarType = in_array($type->getBuiltinType(), [
+                            'int', 'string', 'bool', 'float', 'double'
+                        ]);
+
+                        if (!$attributeView->isScalarType) {
+                            if (Type::BUILTIN_TYPE_OBJECT === $type->getBuiltinType()) {
+                                $attributeView->type = $type->getClassName();
+                            } elseif (!empty($type->getCollectionValueTypes())) {
+                                $collectionType = $type->getCollectionValueTypes()[0];
+                                $attributeView->type = ($collectionType->getClassName() ?? $collectionType->getBuiltinType()).'[]';
+                            } else {
+                                $attributeView->isScalarType = true;
+                            }
+                        }
+                        break;
+                    }
+                }
+
+                $attributeView->name = $parameter->getName();
+
+                $classView->constructorArgs[] = $attributeView;
+            }
+        }
+
+        if (null !== $this->classDiscriminatorResolver && null !== $mapping = $this->classDiscriminatorResolver->getMappingForClass($metadata->getName())) {
+            $classView->isAbstract = true;
+            $classView->discriminatorMapping = $mapping->getTypesMapping();
+            $classView->discriminatorProperty = $mapping->getTypeProperty();
+        }
+
+        foreach ($metadata->getAttributesMetadata() as $attribute) {
+            if ($attribute->isIgnored()) {
+                continue;
+            }
+
+            $attrView = new AttributeView();
+            $attrView->name = $attribute->getName();
+            $attrView->serializedName = $attribute->getSerializedName() ?? $attribute->getName();
+            $attrView->valueReader = CodeGenerator::generateGetter($metadata->getReflectionClass(), $attribute->getName(), [
+                ':object' => '$object',
+                ':refClass' => '$this->refClass',
+            ]);
+            $attrView->valueWriter = CodeGenerator::generateSetter($metadata->getReflectionClass(), $attribute->getName(), [
+                ':object' => '$object',
+                ':refClass' => '$this->refClass',
+            ]);
+
+            $types = (array) $this->propertyInfo->getTypes($metadata->name, $attribute->name);
+
+            /** @var Type $type */
+            foreach ($types as $type) {
+                $attrView->type = $type->getBuiltinType();
+                $attrView->isNullable = $type->isNullable();
+                $attrView->isScalarType = in_array($type->getBuiltinType(), [
+                    'int', 'string', 'bool', 'float', 'double'
+                ]);
+
+                if (!$attrView->isScalarType) {
+                    if (Type::BUILTIN_TYPE_OBJECT === $type->getBuiltinType()) {
+                        $attrView->type = $type->getClassName();
+                    } elseif (!empty($type->getCollectionValueTypes())) {
+                        $collectionType = $type->getCollectionValueTypes()[0];
+                        $attrView->type = ($collectionType->getClassName() ?? $collectionType->getBuiltinType()).'[]';
+                    } else {
+                        $attrView->isScalarType = true;
+                    }
+                }
+                break;
+            }
+
+            $classView->allowedAttributes['*'][$attribute->getName()] = true;
+
+            foreach ($attribute->getGroups() as $group) {
+                $classView->allowedAttributes[$group][$attribute->getName()] = true;
+            }
+
+            $classView->add($attrView);
+        }
+
+        return $this->twig->render('class.php.twig', [
+            'classView' => $classView
+        ]);
+
+//
+//        $phpFile = new PhpFile();
+//        $phpFile
+//            ->setStrictTypes();
+//
+//        $class = $phpFile
+//            ->addClass($config->normalizerClassName)
+//            ->setFinal()
+//            ->setExtends(\TSantos\FastObjectNormalizer\AbstractObjectNormalizer::class)
+//            ->addComment('Auto-generated class! Do not change it by yourself.');
+//
+//        $class
+//            ->addProperty('targetType', $metadata->getName())
+//            ->setType('string')
+//            ->setStatic()
+//            ->setProtected();
+//
+//        $this->buildAllowedAttributes($class, $metadata);
+//        $this->buildNormalizeMethod($class, $metadata);
+//        $this->buildDenormalizeMethod($class, $metadata);
+//        $this->buildNewInstanceMethod($class, $metadata);
 
         return $phpFile;
     }

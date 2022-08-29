@@ -19,6 +19,7 @@ abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFa
 {
     protected static string $targetType;
     protected static array $allowedAttributes = [];
+    protected static array $classDiscriminator = [];
     protected readonly \ReflectionClass $refClass;
 
     public function __construct(
@@ -80,8 +81,6 @@ abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFa
 
     public function denormalize(mixed $data, string $type, string $format = null, array $context = [])
     {
-        $this->applyCallbacks($data, $format, $context);
-
         return $this->doDenormalize($data, $type, $format, $context);
     }
 
@@ -90,14 +89,6 @@ abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFa
         $data = $this->doNormalize($object, $format, $context);
 
         $this->applyCallbacks($data, $format, $context);
-
-        if ($context[SfAbstractObjectNormalizer::SKIP_NULL_VALUES] ?? false) {
-            foreach ($data as $key => $value) {
-                if (is_null($value)) {
-                    unset($data[$key]);
-                }
-            }
-        }
 
         return $data;
     }

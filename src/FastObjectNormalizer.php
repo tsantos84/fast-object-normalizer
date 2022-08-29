@@ -105,7 +105,7 @@ final class FastObjectNormalizer extends AbstractNormalizer implements Normalize
 
         $config = new NormalizerClassConfig($class, $this->classDumper->outputDir);
 
-        if (!$config->fileExists()) {
+        if (!$config->fileExists() || $this->classDumper->overwrite) {
             $phpFile = $this->classGenerator->generate($config);
             $this->classDumper->dump($config, $phpFile);
         } elseif (!$config->isLoaded()) {
