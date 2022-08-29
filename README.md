@@ -1,5 +1,10 @@
 # Symfony Fast Object Normalizer
 
+|                       [main][main]                       |
+|:--------------------------------------------------------:|
+|           [![Build status][main image]][main]            |
+| [![Coverage Status][main coverage image]][main coverage] |
+
 A Symfony Object Normalizer that improves the serialization process up to 5x. This boost of performance can be 
 accomplished because this normalizer generates dedicated normalizes to your data classes, so you don't need
 to worry about runtime overhead like reflections or code relying on metadata.
@@ -110,3 +115,7 @@ An important aspect you should know also is that almost all these features were 
 It means that some different behaviors can be experienced in some specific scenarios. If you experience some weird behavior,
 please don't hesitate to open a new issue. 
 
+[main image]: https://github.com/tsantos84/fast-object-normalizer/actions/workflows/build.yml/badge.svg?branch=main
+[main]: https://github.com/tsantos84/fast-object-normalizer/tree/main
+[main coverage image]: https://codecov.io/gh/tsantos84/fast-object-normalizer/branch/main/graph/badge.svg
+[main coverage]: https://codecov.io/gh/tsantos84/fast-object-normalizer/branch/main
