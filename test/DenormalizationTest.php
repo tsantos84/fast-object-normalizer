@@ -70,6 +70,7 @@ final class DenormalizationTest extends TestCase
         $this->assertSame(1.1, $result->float);
         $this->assertSame(['foo' => 'bar'], $result->array);
         $this->assertCount(2, $result->objectCollection);
+        $this->assertInstanceOf(DummyWithConstructor::class, $result->objectCollection[0]);
         $this->assertSame('foo', $result->objectCollection[0]->foo);
         $this->assertSame('foo', $result->objectCollection[1]->foo);
     }

@@ -1,0 +1,48 @@
+{% macro read(attr) %}
+        if (isset($allowedAttributes['{{ attr.name }}'])) {
+            $value = {{ attr_accessor(attr, {':object': '$object', ':refClass': '$this->refClass'})|raw }};
+            if (null !== $value) {
+{% if attr.isScalarType %}
+                $value = ({{ attr.type }}) $value;
+{% else %}
+                $value = $this->serializer->normalize($value, $format, $this->createChildContext('{{ attr.name }}', $context));
+{% endif %}
+            }
+            if ((null !== $callback = ($context[AbstractNormalizer::CALLBACKS]['{{ attr.name }}'] ?? null)) && \is_callable($callback)) {
+                $value = \call_user_func($callback, $value, $data, '{{ attr.name }}', $format, $context);
+            }
+            if (null !== $value || false === $skipNullValues) {
+                $data['{{ attr.serializedName }}'] = $value;
+            }
+        }
+{% endmacro %}
+
+{% macro readNormalizedValue(attr, result = '') %}
+        if (isset($allowedAttributes['{{ attr.name }}']) && \array_key_exists('{{ attr.serializedName }}', $data)) {
+            $value = $data['{{ attr.serializedName }}'];
+            if (null !== $value) {
+{% if attr.isScalarType %}
+                $value = ({{ attr.type }}) $value;
+{% else %}
+                $value = $this->serializer->denormalize($value, '{{ attr.type }}', $format, $this->createChildContext('{{ attr.name }}', $context));
+{% endif %}
+            }
+            if ((null !== $callback = ($context[AbstractNormalizer::CALLBACKS]['{{ attr.name }}'] ?? null)) && \is_callable($callback)) {
+                $value = \call_user_func($callback, $value, $data, '{{ attr.name }}', $format, $context);
+            }
+            {{ result|raw }}
+        }
+{% endmacro %}
+
+{% macro write(attr) %}
+{% set mutator %}
+{% if attr.isNullable -%}
+{{ attr_mutator(attr, {':value': '$value', ':object': '$object', ':refClass': '$this->refClass'})|raw }};
+{%- else %}
+if (null !== $value) {
+                {{ attr_mutator(attr, {':value': '$value', ':object': '$object', ':refClass': '$this->refClass'})|raw }};
+            }
+{%- endif %}
+{% endset %}
+{{ _self.readNormalizedValue(attr, mutator) }}
+{% endmacro %}

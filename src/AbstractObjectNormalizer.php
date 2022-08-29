@@ -12,13 +12,13 @@ declare(strict_types=1);
 namespace TSantos\FastObjectNormalizer;
 
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
-use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer as SfAbstractObjectNormalizer;
 use Symfony\Component\Serializer\Serializer;
 
 abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFactoryInterface
 {
     protected static string $targetType;
     protected static array $allowedAttributes = [];
+    protected static array $classDiscriminator = [];
     protected readonly \ReflectionClass $refClass;
 
     public function __construct(
@@ -80,26 +80,12 @@ abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFa
 
     public function denormalize(mixed $data, string $type, string $format = null, array $context = [])
     {
-        $this->applyCallbacks($data, $format, $context);
-
         return $this->doDenormalize($data, $type, $format, $context);
     }
 
     public function normalize(mixed $object, string $format = null, array $context = [])
     {
-        $data = $this->doNormalize($object, $format, $context);
-
-        $this->applyCallbacks($data, $format, $context);
-
-        if ($context[SfAbstractObjectNormalizer::SKIP_NULL_VALUES] ?? false) {
-            foreach ($data as $key => $value) {
-                if (null === $value) {
-                    unset($data[$key]);
-                }
-            }
-        }
-
-        return $data;
+        return $this->doNormalize($object, $format, $context);
     }
 
     public function hasCacheableSupportsMethod(): bool
@@ -115,15 +101,6 @@ abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFa
     public function supportsNormalization(mixed $data, string $format = null)
     {
         return $data instanceof static::$targetType;
-    }
-
-    protected function applyCallbacks(array &$data, string $format = null, array $context = [])
-    {
-        foreach ($context[AbstractNormalizer::CALLBACKS] ?? [] as $attribute => $callback) {
-            if (\is_callable($callback) && \array_key_exists($attribute, $data)) {
-                $data[$attribute] = \call_user_func($callback, $data[$attribute], $data, $attribute, $format, $context);
-            }
-        }
     }
 
     abstract protected function doNormalize(mixed $object, string $format = null, array $context = []): array;

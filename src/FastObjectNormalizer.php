@@ -51,7 +51,11 @@ final class FastObjectNormalizer extends AbstractNormalizer implements Normalize
 
     public function supportsDenormalization(mixed $data, string $type, string $format = null)
     {
-        return $this->supportType($type);
+        if (!$this->supportType($type)) {
+            return false;
+        }
+
+        return $this->getNormalizer($type)->supportsDenormalization($data, $type, $format);
     }
 
     public function normalize(mixed $object, string $format = null, array $context = [])
@@ -71,12 +75,16 @@ final class FastObjectNormalizer extends AbstractNormalizer implements Normalize
             return false;
         }
 
-        return $this->supportType(\get_class($data));
+        if (!$this->supportType(\get_class($data))) {
+            return false;
+        }
+
+        return $this->getNormalizer(\get_class($data))->supportsNormalization($data, $format);
     }
 
     private function supportType(string $type): bool
     {
-        if (isset(self::SCALAR_TYPES[$type])) {
+        if (isset(self::SCALAR_TYPES[$type]) || str_ends_with($type, '[]')) {
             return false;
         }
 
@@ -105,7 +113,7 @@ final class FastObjectNormalizer extends AbstractNormalizer implements Normalize
 
         $config = new NormalizerClassConfig($class, $this->classDumper->outputDir);
 
-        if (!$config->fileExists()) {
+        if (!$config->fileExists() || $this->classDumper->overwrite) {
             $phpFile = $this->classGenerator->generate($config);
             $this->classDumper->dump($config, $phpFile);
         } elseif (!$config->isLoaded()) {

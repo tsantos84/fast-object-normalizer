@@ -11,22 +11,16 @@ declare(strict_types=1);
 
 namespace TSantos\FastObjectNormalizer;
 
-use Nette\PhpGenerator\PhpFile;
-
 final class NormalizerClassDumper
 {
     public function __construct(
         public readonly string $outputDir,
-        private readonly bool $overwrite = false
+        public readonly bool $overwrite = false
     ) {
     }
 
-    public function dump(NormalizerClassConfig $classConfig, PhpFile $phpFile, bool $andLoad = true): bool
+    public function dump(NormalizerClassConfig $classConfig, string $content, bool $andLoad = true): bool
     {
-        if (0 === \count($phpFile->getClasses())) {
-            throw new \Exception('There is no class defined on PhpFile provided');
-        }
-
         $shortName = $classConfig->normalizerClassShortName;
         $filename = $this->outputDir.\DIRECTORY_SEPARATOR.$shortName.'.php';
 
@@ -38,7 +32,7 @@ final class NormalizerClassDumper
             return true;
         }
 
-        file_put_contents($filename, (string) $phpFile);
+        file_put_contents($filename, $content);
 
         if ($andLoad) {
             $classConfig->load();
