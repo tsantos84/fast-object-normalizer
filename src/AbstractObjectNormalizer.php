@@ -103,7 +103,20 @@ abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFa
         return $data instanceof static::$targetType;
     }
 
+    public function newInstance(array $data = [], string $format = null, array $context = []): object
+    {
+        $defaultArgs = $context[AbstractNormalizer::DEFAULT_CONSTRUCTOR_ARGUMENTS][static::$targetType] ?? [];
+
+        if (is_array($defaultArgs) && !empty($defaultArgs)) {
+            $data = array_merge($defaultArgs, $data);
+        }
+
+        return $this->doNewInstance($data, $format, $context);
+    }
+
     abstract protected function doNormalize(mixed $object, string $format = null, array $context = []): array;
 
     abstract protected function doDenormalize(array $data, string $type, string $format = null, array $context = []): object;
+
+    abstract protected function doNewInstance(array $data, string $format = null, array $context = []): object;
 }
