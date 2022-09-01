@@ -1,0 +1,21 @@
+name: Benchmark
+
+on: [push]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Run benchmark normalization
+        run: composer benchmark -- --group=normalization
+
+      - name: Run benchmark denormalization
+        run: composer benchmark -- --group=denormalization
