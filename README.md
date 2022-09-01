@@ -157,4 +157,4 @@ point you in how we can implement it.
 [main coverage image]: https://codecov.io/gh/tsantos84/fast-object-normalizer/branch/main/graph/badge.svg
 [main coverage]: https://codecov.io/gh/tsantos84/fast-object-normalizer/branch/main
 
-[benchmark]: https://github.com/tsantos84/fast-object-normalizer/actions/workflows/benchmark.yml
+[benchmark]: https://github.com/tsantos84/fast-object-normalizer/actions/workflows/ci.yml
