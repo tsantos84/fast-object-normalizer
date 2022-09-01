@@ -146,6 +146,21 @@ final class DenormalizationTest extends TestCase
         $this->assertSame('bar', $result->foo->bar);
     }
 
+    public function testDenormalizeWithWithDefaultConstructorArgs(): void
+    {
+        $result = $this->serializer->denormalize(['bar' => 'bar'], DummyWithConstructor::class, null, [
+            AbstractNormalizer::DEFAULT_CONSTRUCTOR_ARGUMENTS => [
+                DummyWithConstructor::class => [
+                    'foo' => 'foo',
+                ],
+            ],
+        ]);
+
+        $this->assertInstanceOf(DummyWithConstructor::class, $result);
+        $this->assertSame('foo', $result->foo);
+        $this->assertSame('bar', $result->bar);
+    }
+
     public function testDenormalizeWithCallbacks(): void
     {
         $data = [

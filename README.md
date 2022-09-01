@@ -126,7 +126,7 @@ With this configuration, you are allowing all types starting with `App\Entity` b
 This packages tries to be the more transparent as possible to allow you to use it without break your application.
 As explained previously, this package creates dedicated normalizers to serialize your data as fast as possible, which
 means that the built-in normalizer `AbstractObjectNormalizer` will not be reached. It means that features like attribute
-grouping, null value skipping, attribute callback etc. were reimplemented here to boost performance, that is, 
+grouping, null value skipping, attribute callback etc. had to be reimplemented here to boost performance, that is, 
 **_it is possible_** to have some different behaviors compared to `AbstractObjectNormalizer`. Please, open an issue if you
 find some divergent behavior.
 
@@ -141,9 +141,9 @@ The table below list all the features currently supported by built-in normalizer
 | Attribute callbacks                              |          Yes           |            Yes             |
 | Circular Reference Handle                        |          Yes           |            Yes             |
 | Object to populate                               |          Yes           |            Yes             |
+| Default constructor args                         |          Yes           |            Yes             |
 | Max depth handle                                 |          Yes           |          Not yet           |
 | Avoid extra attributes                           |          Yes           |          Not yet           |
-| Default constructor args                         |          Yes           |          Not yet           |
 | Type enforcement                                 |          Yes           |          Not yet           |
 | Deep object to populate                          |          Yes           |          Not yet           |
 | Preserve empty objects                           |          Yes           |          Not yet           |
