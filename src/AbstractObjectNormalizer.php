@@ -107,7 +107,7 @@ abstract class AbstractObjectNormalizer implements NormalizerInterface, ObjectFa
     {
         $defaultArgs = $context[AbstractNormalizer::DEFAULT_CONSTRUCTOR_ARGUMENTS][static::$targetType] ?? [];
 
-        if (is_array($defaultArgs) && !empty($defaultArgs)) {
+        if (\is_array($defaultArgs) && !empty($defaultArgs)) {
             $data = array_merge($defaultArgs, $data);
         }
 

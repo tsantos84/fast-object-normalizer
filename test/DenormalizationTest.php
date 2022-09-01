@@ -148,13 +148,12 @@ final class DenormalizationTest extends TestCase
 
     public function testDenormalizeWithWithDefaultConstructorArgs(): void
     {
-
         $result = $this->serializer->denormalize(['bar' => 'bar'], DummyWithConstructor::class, null, [
             AbstractNormalizer::DEFAULT_CONSTRUCTOR_ARGUMENTS => [
                 DummyWithConstructor::class => [
                     'foo' => 'foo',
-                ]
-            ]
+                ],
+            ],
         ]);
 
         $this->assertInstanceOf(DummyWithConstructor::class, $result);
