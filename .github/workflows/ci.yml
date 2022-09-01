@@ -10,7 +10,7 @@ jobs:
     name: Tests
     strategy:
       matrix:
-        php: [ 8.0, 8.1, 8.2 ]
+        php: [ 8.1, 8.2 ]
         os: [ ubuntu-latest, windows-latest ]
     runs-on: ${{ matrix.os }}
     steps:
