@@ -14,8 +14,8 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
 
-      - name: Run benchmark normalization
+      - name: Normalization benchmark
         run: composer benchmark -- --group=normalization
 
-      - name: Run benchmark denormalization
+      - name: Denormalization benchmark
         run: composer benchmark -- --group=denormalization
