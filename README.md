@@ -130,7 +130,7 @@ grouping, null value skipping, attribute callback etc. were reimplemented here t
 **_it is possible_** to have some different behaviors compared to `AbstractObjectNormalizer`. Please, open an issue if you
 find some divergent behavior.
 
-The bellow table list all the features currently supported by built-in normalizer and `Fast Object Normalizer`.
+The table below list all the features currently supported by built-in normalizer and `Fast Object Normalizer`.
 
 | **Feature**                                      | **Builtin Normalizer** | **Fast Object Normalizer** |
 |--------------------------------------------------|:----------------------:|:--------------------------:|
